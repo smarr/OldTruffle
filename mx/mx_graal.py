@@ -1076,59 +1076,19 @@ def vmfg(args):
 def _parseVmArgs(args, vm=None, cwd=None, vmbuild=None):
     """run the VM selected by the '--vm' option"""
 
-    if vm is None:
-        vm = _get_vm()
-
-    if not isVMSupported(vm):
-        mx.abort('The ' + vm + ' is not supported on this platform')
-
     if cwd is None:
         cwd = _vm_cwd
     elif _vm_cwd is not None and _vm_cwd != cwd:
         mx.abort("conflicting working directories: do not set --vmcwd for this command")
 
-    build = vmbuild if vmbuild else _vmbuild if _vmSourcesAvailable else 'product'
-    jdk = _jdk(build, vmToCheck=vm, installJars=False)
-    _updateInstalledJVMCIOptionsFile(jdk)
+    jdk = mx.java().jdk
     mx.expand_project_in_args(args)
-    if _make_eclipse_launch:
-        mx.make_eclipse_launch(args, 'graal-' + build, name=None, deps=mx.project('com.oracle.graal.hotspot').all_deps([], True))
-    if _jacoco == 'on' or _jacoco == 'append':
-        jacocoagent = mx.library("JACOCOAGENT", True)
-        # Exclude all compiler tests and snippets
-
-        includes = ['com.oracle.graal.*', 'com.oracle.jvmci.*']
-        baseExcludes = []
-        for p in mx.projects():
-            projsetting = getattr(p, 'jacoco', '')
-            if projsetting == 'exclude':
-                baseExcludes.append(p.name)
-            if projsetting == 'include':
-                includes.append(p.name + '.*')
-
-        def _filter(l):
-            # filter out specific classes which are already covered by a baseExclude package
-            return [clazz for clazz in l if not any([clazz.startswith(package) for package in baseExcludes])]
-        excludes = []
-        for p in mx.projects():
-            excludes += _filter(_find_classes_with_annotations(p, None, ['@Snippet', '@ClassSubstitution', '@Test'], includeInnerClasses=True).keys())
-            excludes += _filter(p.find_classes_with_matching_source_line(None, lambda line: 'JaCoCo Exclude' in line, includeInnerClasses=True).keys())
-
-        excludes += [package + '.*' for package in baseExcludes]
-        agentOptions = {
-                        'append' : 'true' if _jacoco == 'append' else 'false',
-                        'bootclasspath' : 'true',
-                        'includes' : ':'.join(includes),
-                        'excludes' : ':'.join(excludes),
-                        'destfile' : 'jacoco.exec'
-        }
-        args = ['-javaagent:' + jacocoagent.get_path(True) + '=' + ','.join([k + '=' + v for k, v in agentOptions.items()])] + args
     exe = join(jdk, 'bin', mx.exe_suffix('java'))
     pfx = _vm_prefix.split() if _vm_prefix is not None else []
 
     if '-version' in args:
         ignoredArgs = args[args.index('-version') + 1:]
-        if  len(ignoredArgs) > 0:
+        if len(ignoredArgs) > 0:
             mx.log("Warning: The following options will be ignored by the vm because they come after the '-version' argument: " + ' '.join(ignoredArgs))
 
     # Unconditionally prepend Truffle to the boot class path.
@@ -1141,9 +1101,8 @@ def _parseVmArgs(args, vm=None, cwd=None, vmbuild=None):
     return (pfx, exe, vm, args, cwd)
 
 def vm(args, vm=None, nonZeroIsFatal=True, out=None, err=None, cwd=None, timeout=None, vmbuild=None):
-    (pfx_, exe_, vm_, args_, cwd) = _parseVmArgs(args, vm, cwd, vmbuild)
-    vm_ = 'jvmci'
-    return mx.run(pfx_ + [exe_, '-' + vm_] + args_, nonZeroIsFatal=nonZeroIsFatal, out=out, err=err, cwd=cwd, timeout=timeout)
+    (pfx_, exe_, _, args_, cwd) = _parseVmArgs(args, vm, cwd, vmbuild)
+    return mx.run(pfx_ + [exe_] + args_, nonZeroIsFatal=nonZeroIsFatal, out=out, err=err, cwd=cwd)
 
 def _find_classes_with_annotations(p, pkgRoot, annotations, includeInnerClasses=False):
     """
@@ -1299,7 +1258,6 @@ def _unittest(args, annotations, prefixCp="", blacklist=None, whitelist=None, ve
                 dist = mx.distribution(jdkDist.name)
                 excluded.update([d.output_dir() for d in dist.sorted_deps()])
             cp = os.pathsep.join([e for e in cp.split(os.pathsep) if e not in excluded])
-            vmArgs = ['-XX:-UseJVMCIClassLoader'] + vmArgs
 
         # suppress menubar and dock when running on Mac
         vmArgs = ['-Djava.awt.headless=true'] + vmArgs
@@ -2000,7 +1958,7 @@ def buildjmh(args):
                 buildOutput.append(x)
         env = os.environ.copy()
         env['JAVA_HOME'] = _jdk(vmToCheck='server')
-        env['MAVEN_OPTS'] = '-server -XX:-UseJVMCIClassLoader'
+        env['MAVEN_OPTS'] = '-server'
         mx.log("Building benchmarks...")
         cmd = ['mvn']
         if args.settings:
@@ -2026,8 +1984,6 @@ def jmh(args):
         mx.abort(1)
 
     vmArgs, benchmarksAndJsons = _extract_VM_args(args)
-    if isJVMCIEnabled(_get_vm()) and  '-XX:-UseJVMCIClassLoader' not in vmArgs:
-        vmArgs = ['-XX:-UseJVMCIClassLoader'] + vmArgs
 
     benchmarks = [b for b in benchmarksAndJsons if not b.startswith('{')]
     jmhArgJsons = [b for b in benchmarksAndJsons if b.startswith('{')]
