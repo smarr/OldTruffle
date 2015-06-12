@@ -42,7 +42,7 @@ import mx_graal_makefile
 _graal_home = dirname(dirname(__file__))
 
 """ Used to distinguish an exported GraalVM (see 'mx export'). """
-_vmSourcesAvailable = exists(join(_graal_home, 'make')) and exists(join(_graal_home, 'src'))
+_vmSourcesAvailable = True
 
 """ The VMs that can be built and run along with an optional description. Only VMs with a
     description are listed in the dialogue for setting the default VM (see _get_vm()). """
@@ -98,11 +98,6 @@ class JDKDeployedDist:
 
 _jdkDeployedDists = [
     JDKDeployedDist('TRUFFLE'),
-    JDKDeployedDist('JVMCI_SERVICE', partOfHotSpot=True),
-    JDKDeployedDist('JVMCI_API', usesJVMCIClassLoader=True, partOfHotSpot=True),
-    JDKDeployedDist('JVMCI_HOTSPOT', usesJVMCIClassLoader=True, partOfHotSpot=True),
-    JDKDeployedDist('GRAAL', usesJVMCIClassLoader=True),
-    JDKDeployedDist('GRAAL_TRUFFLE', usesJVMCIClassLoader=True)
 ]
 
 JDK_UNIX_PERMISSIONS_DIR = 0755
@@ -123,6 +118,12 @@ def _get_vm():
     if _vm:
         return _vm
     vm = mx.get_env('DEFAULT_VM')
+    if vm is None:
+        extras = mx.get_env('EXTRA_JAVA_HOMES')
+        if not extras is None:
+            for e in extras.split(':'):
+                vm = e
+                break
     envPath = join(_graal_home, 'mx', 'env')
     if vm and 'graal' in vm:
         if exists(envPath):
@@ -199,7 +200,7 @@ def clean(args):
 
         rmIfExists(join(_graal_home, 'build'))
         rmIfExists(join(_graal_home, 'build-nojvmci'))
-        rmIfExists(_jdksDir())
+#        rmIfExists(_jdksDir())
 
 def export(args):
     """create archives of builds split by vmbuild and vm"""
@@ -498,17 +499,6 @@ def _jdk(build=None, vmToCheck=None, create=False, installJars=True):
             if exists(dist.path) and jdkDist.partOfHotSpot:
                 _installDistInJdks(jdkDist)
 
-    if vmToCheck is not None:
-        jvmCfg = _vmCfgInJdk(jdk)
-        found = False
-        with open(jvmCfg) as f:
-            for line in f:
-                if line.strip() == '-' + vmToCheck + ' KNOWN':
-                    found = True
-                    break
-        if not found:
-            _handle_missing_VM(build, vmToCheck)
-
     return jdk
 
 def _updateInstalledJVMCIOptionsFile(jdk):
@@ -670,6 +660,8 @@ def _installDistInJdks(deployableDist):
     """
     Installs the jar(s) for a given Distribution into all existing JVMCI JDKs
     """
+    if True:
+        return
     dist = mx.distribution(deployableDist.name)
     if dist.name == 'GRAAL':
         _patchGraalVersionConstant(dist)
@@ -904,8 +896,8 @@ def build(args, vm=None):
                 mx.log('only product build of original VM exists')
             continue
 
-        if not isVMSupported(vm):
-            mx.log('The ' + vm + ' VM is not supported on this platform - skipping')
+        if True:
+            mx.log('Skipping the VM')
             continue
 
         vmDir = join(_vmLibDirInJdk(jdk), vm)
@@ -1150,6 +1142,7 @@ def _parseVmArgs(args, vm=None, cwd=None, vmbuild=None):
 
 def vm(args, vm=None, nonZeroIsFatal=True, out=None, err=None, cwd=None, timeout=None, vmbuild=None):
     (pfx_, exe_, vm_, args_, cwd) = _parseVmArgs(args, vm, cwd, vmbuild)
+    vm_ = 'jvmci'
     return mx.run(pfx_ + [exe_, '-' + vm_] + args_, nonZeroIsFatal=nonZeroIsFatal, out=out, err=err, cwd=cwd, timeout=timeout)
 
 def _find_classes_with_annotations(p, pkgRoot, annotations, includeInnerClasses=False):
@@ -1269,7 +1262,7 @@ def _unittest(args, annotations, prefixCp="", blacklist=None, whitelist=None, ve
         (_, testfile) = tempfile.mkstemp(".testclasses", "graal")
         os.close(_)
 
-    coreCp = mx.classpath(['com.oracle.graal.test', 'HCFDIS'])
+    coreCp = mx.classpath(['com.oracle.truffle.tck', 'HCFDIS'])
 
     coreArgs = []
     if verbose:
@@ -1314,9 +1307,9 @@ def _unittest(args, annotations, prefixCp="", blacklist=None, whitelist=None, ve
         if len(testclasses) == 1:
             # Execute Junit directly when one test is being run. This simplifies
             # replaying the VM execution in a native debugger (e.g., gdb).
-            vm(prefixArgs + vmArgs + ['-cp', mx._separatedCygpathU2W(cp), 'com.oracle.graal.test.GraalJUnitCore'] + coreArgs + testclasses)
+            vm(prefixArgs + vmArgs + ['-cp', mx._separatedCygpathU2W(cp), 'com.oracle.truffle.tck.TruffleJUnitCore'] + coreArgs + testclasses)
         else:
-            vm(prefixArgs + vmArgs + ['-cp', mx._separatedCygpathU2W(cp), 'com.oracle.graal.test.GraalJUnitCore'] + coreArgs + ['@' + mx._cygpathU2W(testfile)])
+            vm(prefixArgs + vmArgs + ['-cp', mx._separatedCygpathU2W(cp), 'com.oracle.truffle.tck.TruffleJUnitCore'] + coreArgs + ['@' + mx._cygpathU2W(testfile)])
 
     try:
         _run_tests(args, harness, annotations, testfile, blacklist, whitelist, regex)
@@ -1589,114 +1582,10 @@ def ctw(args):
     vm(vmargs)
 
 def _basic_gate_body(args, tasks):
-    # Build server-hosted-jvmci now so we can run the unit tests
-    with Task('BuildHotSpotJVMCIHosted: product', tasks) as t:
-        if t: buildvms(['--vms', 'server', '--builds', 'product', '--check-distributions'])
-
     # Run unit tests on server-hosted-jvmci
     with VM('server', 'product'):
         with Task('UnitTests:hosted-product', tasks) as t:
             if t: unittest(['--enable-timing', '--verbose', '--fail-fast'])
-
-    # Run ctw against rt.jar on server-hosted-jvmci
-    with VM('server', 'product'):
-        with Task('CTW:hosted-product', tasks) as t:
-            if t: ctw(['--ctwopts', '-Inline +ExitVMOnException', '-esa', '-G:+CompileTheWorldMultiThreaded', '-G:-CompileTheWorldVerbose'])
-
-    # Build the other VM flavors
-    with Task('BuildHotSpotGraalOthers: fastdebug,product', tasks) as t:
-        if t: buildvms(['--vms', 'jvmci,server', '--builds', 'fastdebug,product', '--check-distributions'])
-
-    with VM('jvmci', 'fastdebug'):
-        with Task('BootstrapWithSystemAssertions:fastdebug', tasks) as t:
-            if t: vm(['-esa', '-XX:-TieredCompilation', '-version'])
-
-    with VM('jvmci', 'fastdebug'):
-        with Task('BootstrapEconomyWithSystemAssertions:fastdebug', tasks) as t:
-            if t: vm(['-esa', '-XX:-TieredCompilation', '-G:CompilerConfiguration=economy', '-version'])
-
-    with VM('jvmci', 'fastdebug'):
-        with Task('BootstrapWithSystemAssertionsNoCoop:fastdebug', tasks) as t:
-            if t: vm(['-esa', '-XX:-TieredCompilation', '-XX:-UseCompressedOops', '-version'])
-
-    with VM('jvmci', 'fastdebug'):
-        with Task('BootstrapWithExceptionEdges:fastdebug', tasks) as t:
-            if t: vm(['-esa', '-XX:-TieredCompilation', '-G:+StressInvokeWithExceptionNode', '-version'])
-
-    with VM('jvmci', 'product'):
-        with Task('BootstrapWithGCVerification:product', tasks) as t:
-            if t:
-                out = mx.DuplicateSuppressingStream(['VerifyAfterGC:', 'VerifyBeforeGC:']).write
-                vm(['-XX:-TieredCompilation', '-XX:+UnlockDiagnosticVMOptions', '-XX:+VerifyBeforeGC', '-XX:+VerifyAfterGC', '-version'], out=out)
-
-    with VM('jvmci', 'product'):
-        with Task('BootstrapWithG1GCVerification:product', tasks) as t:
-            if t:
-                out = mx.DuplicateSuppressingStream(['VerifyAfterGC:', 'VerifyBeforeGC:']).write
-                vm(['-XX:-TieredCompilation', '-XX:+UnlockDiagnosticVMOptions', '-XX:-UseSerialGC', '-XX:+UseG1GC', '-XX:+VerifyBeforeGC', '-XX:+VerifyAfterGC', '-version'], out=out)
-
-    with VM('jvmci', 'product'):
-        with Task('BootstrapWithRegisterPressure:product', tasks) as t:
-            if t:
-                registers = 'o0,o1,o2,o3,f8,f9,d32,d34' if platform.processor() == 'sparc' else 'rbx,r11,r10,r14,xmm3,xmm11,xmm14'
-                vm(['-XX:-TieredCompilation', '-G:RegisterPressure=' + registers, '-esa', '-version'])
-
-    with VM('jvmci', 'product'):
-        with Task('BootstrapSSAWithRegisterPressure:product', tasks) as t:
-            if t:
-                registers = 'o0,o1,o2,o3,f8,f9,d32,d34' if platform.processor() == 'sparc' else 'rbx,r11,r10,r14,xmm3,xmm11,xmm14'
-                vm(['-XX:-TieredCompilation', '-G:+SSA_LIR', '-G:RegisterPressure=' + registers, '-esa', '-version'])
-
-    with VM('jvmci', 'product'):
-        with Task('BootstrapWithImmutableCode:product', tasks) as t:
-            if t: vm(['-XX:-TieredCompilation', '-G:+ImmutableCode', '-G:+VerifyPhases', '-esa', '-version'])
-
-    for vmbuild in ['fastdebug', 'product']:
-        for test in sanitycheck.getDacapos(level=sanitycheck.SanityCheckLevel.Gate, gateBuildLevel=vmbuild) + sanitycheck.getScalaDacapos(level=sanitycheck.SanityCheckLevel.Gate, gateBuildLevel=vmbuild):
-            with Task(str(test) + ':' + vmbuild, tasks) as t:
-                if t and not test.test('jvmci'):
-                    t.abort(test.name + ' Failed')
-
-    # ensure -Xbatch still works
-    with VM('jvmci', 'product'):
-        with Task('DaCapo_pmd:BatchMode:product', tasks) as t:
-            if t: dacapo(['-Xbatch', 'pmd'])
-
-    # ensure -Xcomp still works
-    with VM('jvmci', 'product'):
-        with Task('XCompMode:product', tasks) as t:
-            if t: vm(['-Xcomp', '-version'])
-
-    if args.jacocout is not None:
-        jacocoreport([args.jacocout])
-
-    global _jacoco
-    _jacoco = 'off'
-
-    with Task('CleanAndBuildIdealGraphVisualizer', tasks) as t:
-        if t and platform.processor() != 'sparc':
-            buildxml = mx._cygpathU2W(join(_graal_home, 'src', 'share', 'tools', 'IdealGraphVisualizer', 'build.xml'))
-            mx.run(['ant', '-f', buildxml, '-q', 'clean', 'build'], env=_igvBuildEnv())
-
-    # Prevent JVMCI modifications from breaking the standard builds
-    if args.buildNonJVMCI:
-        with Task('BuildHotSpotVarieties', tasks) as t:
-            if t:
-                buildvms(['--vms', 'client,server', '--builds', 'fastdebug,product'])
-                if mx.get_os() not in ['windows', 'cygwin']:
-                    buildvms(['--vms', 'server-nojvmci', '--builds', 'product,optimized'])
-
-        for vmbuild in ['product', 'fastdebug']:
-            for theVm in ['client', 'server']:
-                if not isVMSupported(theVm):
-                    mx.log('The ' + theVm + ' VM is not supported on this platform')
-                    continue
-                with VM(theVm, vmbuild):
-                    with Task('DaCapo_pmd:' + theVm + ':' + vmbuild, tasks) as t:
-                        if t: dacapo(['pmd'])
-
-                    with Task('UnitTests:' + theVm + ':' + vmbuild, tasks) as t:
-                        if t: unittest(['-XX:CompileCommand=exclude,*::run*', 'graal.api', 'java.test'])
 
 
 def gate(args, gate_body=_basic_gate_body):
@@ -1890,7 +1779,7 @@ def igv(args):
 
 def maven_install_truffle(args):
     """install Truffle into your local Maven repository"""
-    for name in ['TRUFFLE', 'TRUFFLE-DSL-PROCESSOR']:
+    for name in ['TRUFFLE', 'TRUFFLE-TCK', 'TRUFFLE-DSL-PROCESSOR']:
         mx.archive(["@" + name])
         path = mx._dists[name].path
         mx.run(['mvn', 'install:install-file', '-DgroupId=com.oracle', '-DartifactId=' + name.lower(), '-Dversion=' + graal_version('SNAPSHOT'), '-Dpackaging=jar', '-Dfile=' + path])
