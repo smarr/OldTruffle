@@ -84,7 +84,7 @@ _vm_prefix = None
 
 _make_eclipse_launch = False
 
-_minVersion = mx.VersionSpec('1.8')
+_minVersion = mx.VersionSpec('1.7')
 
 # max version (first _unsupported_ version)
 _untilVersion = None
@@ -878,9 +878,6 @@ def build(args, vm=None):
         buildSuffix = ''
     elif vm.startswith('client'):
         buildSuffix = '1'
-    else:
-        assert vm == 'jvmci', vm
-        buildSuffix = 'jvmci'
 
     if _installed_jdks and _installed_jdks != _graal_home:
         if not mx.ask_yes_no("Warning: building while --installed-jdks is set (" + _installed_jdks + ") is not recommanded - are you sure you want to continue", 'n'):
