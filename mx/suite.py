@@ -354,7 +354,7 @@ suite = {
       ],
     },
 
-    "TRUFFLE-TCK" : {
+    "TRUFFLE_TCK" : {
       "path" : "build/truffle-tck.jar",
       "subDir" : "graal",
       "sourcesPath" : "build/truffle-tck.src.zip",
@@ -365,7 +365,7 @@ suite = {
       "distDependencies" : ["TRUFFLE"],
     },
 
-    "TRUFFLE-DSL-PROCESSOR" : {
+    "TRUFFLE_DSL_PROCESSOR" : {
       "path" : "build/truffle-dsl-processor.jar",
       "subDir" : "graal",
       "sourcesPath" : "build/truffle-dsl-processor.src.zip",
@@ -374,7 +374,7 @@ suite = {
       "distDependencies" : ["TRUFFLE"],
     },
 
-    "TRUFFLE-SL" : {
+    "TRUFFLE_SL" : {
       "path" : "build/truffle-sl.jar",
       "subDir" : "graal",
       "sourcesPath" : "build/truffle-sl.src.zip",
@@ -385,8 +385,8 @@ suite = {
       ],
       "distDependencies" : [
           "TRUFFLE",
-          "TRUFFLE-TCK",
-          "TRUFFLE-DSL-PROCESSOR"
+          "TRUFFLE_TCK",
+          "TRUFFLE_DSL_PROCESSOR"
       ],
     },
   },
