@@ -276,7 +276,7 @@ suite = {
           "JUNIT"
           ],
       "checkstyle" : "com.oracle.truffle.api",
-      "javaCompliance" : "1.8",
+      "javaCompliance" : "1.7",
       "workingSets" : "Truffle,Tools",
     },
 
@@ -295,7 +295,7 @@ suite = {
       "dependencies" : ["com.oracle.truffle.tools.debug.engine",
                         "JLINE"],
       "checkstyle" : "com.oracle.truffle.api",
-      "javaCompliance" : "1.8",
+      "javaCompliance" : "1.7",
       "workingSets" : "Truffle,Tools",
     },
 
@@ -309,7 +309,7 @@ suite = {
         "FINDBUGS"
       ],
       "checkstyle" : "com.oracle.truffle.dsl.processor",
-      "javaCompliance" : "1.8",
+      "javaCompliance" : "1.7",
       "annotationProcessors" : ["com.oracle.truffle.dsl.processor"],
       "workingSets" : "Truffle,SimpleLanguage",
     },
@@ -322,7 +322,7 @@ suite = {
         "com.oracle.truffle.sl"
       ],
       "checkstyle" : "com.oracle.truffle.dsl.processor",
-      "javaCompliance" : "1.8",
+      "javaCompliance" : "1.7",
       "workingSets" : "Truffle,SimpleLanguage,Test",
     },
 
@@ -331,7 +331,7 @@ suite = {
       "sourceDirs" : ["src"],
       "dependencies" : ["com.oracle.truffle.tools.debug.shell"],
       "checkstyle" : "com.oracle.truffle.api",
-      "javaCompliance" : "1.8",
+      "javaCompliance" : "1.7",
       "workingSets" : "Truffle,SimpleLanguage,Tools",
     },
   },
@@ -372,6 +372,22 @@ suite = {
       "javaCompliance" : "1.7",
       "dependencies" : ["com.oracle.truffle.dsl.processor"],
       "distDependencies" : ["TRUFFLE"],
-    }
+    },
+
+    "TRUFFLE-SL" : {
+      "path" : "build/truffle-sl.jar",
+      "subDir" : "graal",
+      "sourcesPath" : "build/truffle-sl.src.zip",
+      "javaCompliance" : "1.7",
+      "dependencies" : [
+        "com.oracle.truffle.sl",
+        "com.oracle.truffle.sl.test"
+      ],
+      "distDependencies" : [
+          "TRUFFLE",
+          "TRUFFLE-TCK",
+          "TRUFFLE-DSL-PROCESSOR"
+      ],
+    },
   },
 }

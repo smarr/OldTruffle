@@ -1734,7 +1734,7 @@ def igv(args):
 
 def maven_install_truffle(args):
     """install Truffle into your local Maven repository"""
-    for name in ['TRUFFLE', 'TRUFFLE-TCK', 'TRUFFLE-DSL-PROCESSOR']:
+    for name in ['TRUFFLE', 'TRUFFLE-TCK', 'TRUFFLE-DSL-PROCESSOR', 'TRUFFLE-SL']:
         mx.archive(["@" + name])
         path = mx._dists[name].path
         mx.run(['mvn', 'install:install-file', '-DgroupId=com.oracle', '-DartifactId=' + name.lower(), '-Dversion=' + graal_version('SNAPSHOT'), '-Dpackaging=jar', '-Dfile=' + path])
