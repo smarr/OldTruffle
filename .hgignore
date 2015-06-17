@@ -42,8 +42,8 @@
 \.hprof$
 \javafilelist.txt$
 \.hprof\.txt$
-^graal/.*/build.xml
-^graal/.*/nbproject/
+^truffle/.*/build.xml
+^truffle/.*/nbproject/
 dist
 ^doc/.*/dot_temp_
 ^doc/doxygen/.*$
