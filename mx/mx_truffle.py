@@ -39,16 +39,10 @@ import fnmatch
 # This works because when mx loads this file, it makes sure __file__ gets an absolute path
 _graal_home = dirname(dirname(__file__))
 
-""" Used to distinguish an exported GraalVM (see 'mx export'). """
-_vmSourcesAvailable = True
-
 """ The VM that will be run by the 'vm' command and built by default by the 'build' command.
     This can be set via the global '--vm' option or the DEFAULT_VM environment variable.
     It can also be temporarily set by using of a VM context manager object in a 'with' statement. """
 _vm = None
-
-""" Prefix for running the VM. """
-_vm_prefix = None
 
 _make_eclipse_launch = False
 
@@ -701,17 +695,6 @@ def build(args, vm=None):
     opts2 = mx.build(['--source', '1.7'] + args, parser=parser)
     assert len(opts2.remainder) == 0
 
-    if not _vmSourcesAvailable or not opts2.native:
-        return
-
-    if os.environ.get('BUILDING_FROM_IDE', None) == 'true':
-        build = os.environ.get('IDE_BUILD_TARGET', None)
-        if build is None or len(build) == 0:
-            return
-
-    if vm is None:
-        vm = _get_vm()
-
 def vmg(args):
     """run the debug build of VM selected by the '--vm' option"""
     return vm(args, vmbuild='debug')
@@ -726,7 +709,7 @@ def _parseVmArgs(args, vm=None, cwd=None, vmbuild=None):
     jdk = mx.java().jdk
     mx.expand_project_in_args(args)
     exe = join(jdk, 'bin', mx.exe_suffix('java'))
-    pfx = _vm_prefix.split() if _vm_prefix is not None else []
+    pfx = []
 
     if '-version' in args:
         ignoredArgs = args[args.index('-version') + 1:]
@@ -1573,16 +1556,6 @@ def mx_init(suite):
         'jol' : [jol, ''],
     }
 
-    if _vmSourcesAvailable:
-        mx.add_argument('--ecl', action='store_true', dest='make_eclipse_launch', help='create launch configuration for running VM execution(s) in Eclipse')
-        mx.add_argument('--vmprefix', action='store', dest='vm_prefix', help='prefix for running the VM (e.g. "/usr/bin/gdb --args")', metavar='<prefix>')
-        mx.add_argument('--gdb', action='store_const', const='/usr/bin/gdb --args', dest='vm_prefix', help='alias for --vmprefix "/usr/bin/gdb --args"')
-        mx.add_argument('--lldb', action='store_const', const='lldb --', dest='vm_prefix', help='alias for --vmprefix "lldb --"')
-
-        commands.update({
-            'export': [export, '[-options] [zipfile]'],
-        })
-
     mx.update_commands(suite, commands)
 
 def mx_post_parse_cmd_line(opts):  #
@@ -1591,12 +1564,6 @@ def mx_post_parse_cmd_line(opts):  #
         mx.abort('Requires Java version ' + str(_minVersion) + ' or greater for JAVA_HOME, got version ' + str(mx.java().version))
     if _untilVersion and mx.java().version >= _untilVersion:
         mx.abort('Requires Java version strictly before ' + str(_untilVersion) + ' for JAVA_HOME, got version ' + str(mx.java().version))
-
-    if _vmSourcesAvailable:
-        global _make_eclipse_launch
-        _make_eclipse_launch = getattr(opts, 'make_eclipse_launch', False)
-    global _vm_prefix
-    _vm_prefix = opts.vm_prefix
 
     for jdkDist in _jdkDeployedDists:
         def _close(jdkDeployable):
