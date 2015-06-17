@@ -5597,7 +5597,7 @@ def _suitename(mxDir):
     parts = base.split('.')
     # temporary workaround until mx.graal exists
     if len(parts) == 1:
-        return 'graal'
+        return 'truffle'
     else:
         return parts[1]
 
