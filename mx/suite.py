@@ -389,5 +389,19 @@ suite = {
           "TRUFFLE_DSL_PROCESSOR"
       ],
     },
+
+     "TRUFFLE_DEBUG" : {
+      "path" : "build/truffle-debug.jar",
+      "subDir" : "graal",
+      "sourcesPath" : "build/truffle-debug.src.zip",
+      "javaCompliance" : "1.8",
+      "dependencies" : [
+        "com.oracle.truffle.tools.debug.shell",
+      ],
+      "exclude" : ["JLINE"],
+      "distDependencies" : [
+          "TRUFFLE",
+      ],
+     }
   },
 }
