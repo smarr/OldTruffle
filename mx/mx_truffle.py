@@ -74,9 +74,6 @@ _vmbuild = _vmbuildChoices[0]
 """ The current working directory to switch to before running the VM. """
 _vm_cwd = None
 
-""" The base directory in which the JDKs cloned from $JAVA_HOME exist. """
-_installed_jdks = None
-
 """ Prefix for running the VM. """
 _vm_prefix = None
 
@@ -198,7 +195,6 @@ def clean(args):
 
         rmIfExists(join(_graal_home, 'build'))
         rmIfExists(join(_graal_home, 'build-nojvmci'))
-#        rmIfExists(_jdksDir())
 
 def export(args):
     """create archives of builds split by vmbuild and vm"""
@@ -397,7 +393,7 @@ def _vmCfgInJdk(jdk, jvmCfgFile='jvm.cfg'):
     return join(_vmLibDirInJdk(jdk), jvmCfgFile)
 
 def _jdksDir():
-    return os.path.abspath(join(_installed_jdks if _installed_jdks else _graal_home, 'jdk' + str(mx.java().version)))
+    return os.path.abspath(join(_graal_home, 'jdk' + str(mx.java().version)))
 
 def _handle_missing_VM(bld, vm=None):
     if not vm:
@@ -487,8 +483,6 @@ def _jdk(build=None, vmToCheck=None, create=False, installJars=True):
                 pass
     else:
         if not exists(jdk):
-            if _installed_jdks:
-                mx.log("The selected JDK directory does not (yet) exist: " + jdk)
             _handle_missing_VM(build, vmToCheck)
 
     if installJars:
@@ -866,10 +860,6 @@ def build(args, vm=None):
 
     if vm is None:
         vm = _get_vm()
-
-    if _installed_jdks and _installed_jdks != _graal_home:
-        if not mx.ask_yes_no("Warning: building while --installed-jdks is set (" + _installed_jdks + ") is not recommanded - are you sure you want to continue", 'n'):
-            mx.abort(1)
 
 def vmg(args):
     """run the debug build of VM selected by the '--vm' option"""
@@ -2232,9 +2222,6 @@ def mx_init(suite):
     }
 
     mx.add_argument('--vmcwd', dest='vm_cwd', help='current directory will be changed to <path> before the VM is executed', default=None, metavar='<path>')
-    mx.add_argument('--installed-jdks', help='the base directory in which the JDKs cloned from $JAVA_HOME exist. ' +
-                    'The VM selected by --vm and --vmbuild options is under this directory (i.e., ' +
-                    join('<path>', '<jdk-version>', '<vmbuild>', 'jre', 'lib', '<vm>', mx.add_lib_prefix(mx.add_lib_suffix('jvm'))) + ')', default=None, metavar='<path>')
 
     if _vmSourcesAvailable:
         mx.add_argument('--vm', action='store', dest='vm', choices=_vmChoices.keys(), help='the VM type to build/run')
@@ -2269,8 +2256,6 @@ def mx_post_parse_cmd_line(opts):  #
         _make_eclipse_launch = getattr(opts, 'make_eclipse_launch', False)
     global _vm_cwd
     _vm_cwd = opts.vm_cwd
-    global _installed_jdks
-    _installed_jdks = opts.installed_jdks
     global _vm_prefix
     _vm_prefix = opts.vm_prefix
 
