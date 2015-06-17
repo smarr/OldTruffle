@@ -71,8 +71,6 @@ _vmbuildChoices = ['product', 'fastdebug', 'debug', 'optimized']
     It can also be temporarily set by using of a VM context manager object in a 'with' statement. """
 _vmbuild = _vmbuildChoices[0]
 
-_jacoco = 'off'
-
 """ The current working directory to switch to before running the VM. """
 _vm_cwd = None
 
@@ -1367,11 +1365,9 @@ def gate(args, gate_body=_basic_gate_body):
     parser.add_argument('-g', '--only-build-jvmci', action='store_false', dest='buildNonJVMCI', help='only build the JVMCI VM')
     parser.add_argument('-t', '--task-filter', help='comma separated list of substrings to select subset of tasks to be run')
     parser.add_argument('-x', action='store_true', help='makes --task-filter an exclusion instead of inclusion filter')
-    parser.add_argument('--jacocout', help='specify the output directory for jacoco report')
 
     args = parser.parse_args(args)
 
-    global _jacoco
     if args.task_filter:
         Task.filters = args.task_filter.split(',')
         Task.filtersExclude = args.x
@@ -1437,14 +1433,6 @@ def gate(args, gate_body=_basic_gate_body):
         with Task('FindBugs', tasks) as t:
             if t and findbugs([]) != 0:
                 t.abort('FindBugs warnings were found')
-
-        if exists('jacoco.exec'):
-            os.unlink('jacoco.exec')
-
-        if args.jacocout is not None:
-            _jacoco = 'append'
-        else:
-            _jacoco = 'off'
 
         gate_body(args, tasks)
 
@@ -1983,40 +1971,6 @@ def hcfdis(args):
                     for l in lines:
                         print >> fp, l
 
-def jacocoreport(args):
-    """create a JaCoCo coverage report
-
-    Creates the report from the 'jacoco.exec' file in the current directory.
-    Default output directory is 'coverage', but an alternative can be provided as an argument."""
-    jacocoreport = mx.library("JACOCOREPORT", True)
-    out = 'coverage'
-    if len(args) == 1:
-        out = args[0]
-    elif len(args) > 1:
-        mx.abort('jacocoreport takes only one argument : an output directory')
-
-    includes = ['com.oracle.graal', 'com.oracle.jvmci']
-    for p in mx.projects():
-        projsetting = getattr(p, 'jacoco', '')
-        if projsetting == 'include':
-            includes.append(p.name)
-
-    includedirs = set()
-    for p in mx.projects():
-        projsetting = getattr(p, 'jacoco', '')
-        if projsetting == 'exclude':
-            continue
-        for include in includes:
-            if include in p.dir:
-                includedirs.add(p.dir)
-
-    for i in includedirs:
-        bindir = i + '/bin'
-        if not os.path.exists(bindir):
-            os.makedirs(bindir)
-
-    mx.run_java(['-jar', jacocoreport.get_path(True), '--in', 'jacoco.exec', '--out', out] + sorted(includedirs))
-
 def sl(args):
     """run an SL program"""
     vmArgs, slArgs = _extract_VM_args(args)
@@ -2265,7 +2219,6 @@ def mx_init(suite):
         'unittest' : [unittest, '[unittest options] [--] [VM options] [filters...]', _unittestHelpSuffix],
         'makejmhdeps' : [makejmhdeps, ''],
         'shortunittest' : [shortunittest, '[unittest options] [--] [VM options] [filters...]', _unittestHelpSuffix],
-        'jacocoreport' : [jacocoreport, '[output directory]'],
         'site' : [site, '[-options]'],
         'vm': [vm, '[-options] class [args...]'],
         'vmg': [vmg, '[-options] class [args...]'],
@@ -2278,7 +2231,6 @@ def mx_init(suite):
         'makefile' : [mx_graal_makefile.build_makefile, 'build makefiles for JDK build'],
     }
 
-    mx.add_argument('--jacoco', help='instruments com.oracle.* classes using JaCoCo', default='off', choices=['off', 'on', 'append'])
     mx.add_argument('--vmcwd', dest='vm_cwd', help='current directory will be changed to <path> before the VM is executed', default=None, metavar='<path>')
     mx.add_argument('--installed-jdks', help='the base directory in which the JDKs cloned from $JAVA_HOME exist. ' +
                     'The VM selected by --vm and --vmbuild options is under this directory (i.e., ' +
@@ -2315,8 +2267,6 @@ def mx_post_parse_cmd_line(opts):  #
             _vmbuild = opts.vmbuild
         global _make_eclipse_launch
         _make_eclipse_launch = getattr(opts, 'make_eclipse_launch', False)
-    global _jacoco
-    _jacoco = opts.jacoco
     global _vm_cwd
     _vm_cwd = opts.vm_cwd
     global _installed_jdks
