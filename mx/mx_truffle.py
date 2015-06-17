@@ -71,9 +71,6 @@ _vmbuildChoices = ['product', 'fastdebug', 'debug', 'optimized']
     It can also be temporarily set by using of a VM context manager object in a 'with' statement. """
 _vmbuild = _vmbuildChoices[0]
 
-""" The current working directory to switch to before running the VM. """
-_vm_cwd = None
-
 """ Prefix for running the VM. """
 _vm_prefix = None
 
@@ -871,11 +868,6 @@ def vmfg(args):
 
 def _parseVmArgs(args, vm=None, cwd=None, vmbuild=None):
     """run the VM selected by the '--vm' option"""
-
-    if cwd is None:
-        cwd = _vm_cwd
-    elif _vm_cwd is not None and _vm_cwd != cwd:
-        mx.abort("conflicting working directories: do not set --vmcwd for this command")
 
     jdk = mx.java().jdk
     mx.expand_project_in_args(args)
@@ -2221,8 +2213,6 @@ def mx_init(suite):
         'makefile' : [mx_graal_makefile.build_makefile, 'build makefiles for JDK build'],
     }
 
-    mx.add_argument('--vmcwd', dest='vm_cwd', help='current directory will be changed to <path> before the VM is executed', default=None, metavar='<path>')
-
     if _vmSourcesAvailable:
         mx.add_argument('--vm', action='store', dest='vm', choices=_vmChoices.keys(), help='the VM type to build/run')
         mx.add_argument('--vmbuild', action='store', dest='vmbuild', choices=_vmbuildChoices, help='the VM build to build/run (default: ' + _vmbuildChoices[0] + ')')
@@ -2254,8 +2244,6 @@ def mx_post_parse_cmd_line(opts):  #
             _vmbuild = opts.vmbuild
         global _make_eclipse_launch
         _make_eclipse_launch = getattr(opts, 'make_eclipse_launch', False)
-    global _vm_cwd
-    _vm_cwd = opts.vm_cwd
     global _vm_prefix
     _vm_prefix = opts.vm_prefix
 
