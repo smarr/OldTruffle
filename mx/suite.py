@@ -1,6 +1,6 @@
 suite = {
   "mxversion" : "1.0",
-  "name" : "graal",
+  "name" : "truffle",
   "libraries" : {
 
     # ------------- Libraries -------------
