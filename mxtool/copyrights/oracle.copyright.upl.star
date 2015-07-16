@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,40 +38,3 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.truffle.sl.nodes.controlflow;
-
-import com.oracle.truffle.api.frame.*;
-import com.oracle.truffle.api.nodes.*;
-import com.oracle.truffle.api.source.*;
-import com.oracle.truffle.sl.nodes.*;
-import com.oracle.truffle.sl.runtime.*;
-
-/**
- * Implementation of the SL return statement. We need to unwind an unknown number of interpreter
- * frames that are between this {@link SLReturnNode} and the {@link SLFunctionBodyNode} of the
- * method we are exiting. This is done by throwing an {@link SLReturnException exception} that is
- * caught by the {@link SLFunctionBodyNode#executeGeneric function body}. The exception transports
- * the return value.
- */
-@NodeInfo(shortName = "return", description = "The node implementing a return statement")
-public final class SLReturnNode extends SLStatementNode {
-
-    @Child private SLExpressionNode valueNode;
-
-    public SLReturnNode(SourceSection src, SLExpressionNode valueNode) {
-        super(src);
-        this.valueNode = valueNode;
-    }
-
-    @Override
-    public void executeVoid(VirtualFrame frame) {
-        Object result;
-        if (valueNode != null) {
-            result = valueNode.executeGeneric(frame);
-        } else {
-            /* Return statement that was not followed by an expression, so return the SL null value. */
-            result = SLNull.SINGLETON;
-        }
-        throw new SLReturnException(result);
-    }
-}
