@@ -1,0 +1,11 @@
+build
+lib
+mx.truffle/currentAnnotationProcessors
+mx.truffle/env
+mx.truffle/checkstyle-timestamps
+mxtool/.jdk*
+mxtool/bin
+*.pyc
+truffle/**/bin
+truffle/**/src_gen
+truffle/**/ap
