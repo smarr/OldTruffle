@@ -1148,62 +1148,6 @@ def gate(args, gate_body=_basic_gate_body):
     if args.task_filter:
         Task.filters = None
 
-def _igvJdk():
-    v8u20 = mx.VersionSpec("1.8.0_20")
-    v8u40 = mx.VersionSpec("1.8.0_40")
-    v8 = mx.VersionSpec("1.8")
-    def _igvJdkVersionCheck(version):
-        return version >= v8 and (version < v8u20 or version >= v8u40)
-    return mx.java_version(_igvJdkVersionCheck, versionDescription='>= 1.8 and < 1.8.0u20 or >= 1.8.0u40').jdk
-
-def _igvBuildEnv():
-        # When the http_proxy environment variable is set, convert it to the proxy settings that ant needs
-    env = dict(os.environ)
-    proxy = os.environ.get('http_proxy')
-    if not (proxy is None) and len(proxy) > 0:
-        if '://' in proxy:
-            # Remove the http:// prefix (or any other protocol prefix)
-            proxy = proxy.split('://', 1)[1]
-        # Separate proxy server name and port number
-        proxyName, proxyPort = proxy.split(':', 1)
-        proxyEnv = '-DproxyHost="' + proxyName + '" -DproxyPort=' + proxyPort
-        env['ANT_OPTS'] = proxyEnv
-
-    env['JAVA_HOME'] = _igvJdk()
-    return env
-
-def igv(args):
-    """run the Ideal Graph Visualizer"""
-    logFile = '.ideal_graph_visualizer.log'
-    with open(join(_graal_home, logFile), 'w') as fp:
-        mx.logv('[Ideal Graph Visualizer log is in ' + fp.name + ']')
-        nbplatform = join(_graal_home, 'src', 'share', 'tools', 'IdealGraphVisualizer', 'nbplatform')
-
-        # Remove NetBeans platform if it is earlier than the current supported version
-        if exists(nbplatform):
-            updateTrackingFile = join(nbplatform, 'platform', 'update_tracking', 'org-netbeans-core.xml')
-            if not exists(updateTrackingFile):
-                mx.log('Could not find \'' + updateTrackingFile + '\', removing NetBeans platform')
-                shutil.rmtree(nbplatform)
-            else:
-                dom = xml.dom.minidom.parse(updateTrackingFile)
-                currentVersion = mx.VersionSpec(dom.getElementsByTagName('module_version')[0].getAttribute('specification_version'))
-                supportedVersion = mx.VersionSpec('3.43.1')
-                if currentVersion < supportedVersion:
-                    mx.log('Replacing NetBeans platform version ' + str(currentVersion) + ' with version ' + str(supportedVersion))
-                    shutil.rmtree(nbplatform)
-                elif supportedVersion < currentVersion:
-                    mx.log('Supported NetBeans version in igv command should be updated to ' + str(currentVersion))
-
-        if not exists(nbplatform):
-            mx.logv('[This execution may take a while as the NetBeans platform needs to be downloaded]')
-
-        env = _igvBuildEnv()
-        # make the jar for Batik 1.7 available.
-        env['IGV_BATIK_JAR'] = mx.library('BATIK').get_path(True)
-        if mx.run(['ant', '-f', mx._cygpathU2W(join(_graal_home, 'src', 'share', 'tools', 'IdealGraphVisualizer', 'build.xml')), '-l', mx._cygpathU2W(fp.name), 'run'], env=env, nonZeroIsFatal=False):
-            mx.abort("IGV ant build & launch failed. Check '" + logFile + "'. You can also try to delete 'src/share/tools/IdealGraphVisualizer/nbplatform'.")
-
 def maven_install_truffle(args):
     """install Truffle into your local Maven repository"""
     for name in mx._dists:
