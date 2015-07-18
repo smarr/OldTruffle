@@ -1163,34 +1163,6 @@ def maven_install_truffle(args):
         artifactId = path[slash + 1: dot]
         mx.run(['mvn', 'install:install-file', '-DgroupId=com.oracle.' + dist.suite.name, '-DartifactId=' + artifactId, '-Dversion=' + graal_version('SNAPSHOT'), '-Dpackaging=jar', '-Dfile=' + path])
 
-def c1visualizer(args):
-    """run the Cl Compiler Visualizer"""
-    libpath = join(_graal_home, 'lib')
-    if mx.get_os() == 'windows':
-        executable = join(libpath, 'c1visualizer', 'bin', 'c1visualizer.exe')
-    else:
-        executable = join(libpath, 'c1visualizer', 'bin', 'c1visualizer')
-
-    # Check whether the current C1Visualizer installation is the up-to-date
-    if exists(executable) and not exists(mx.library('C1VISUALIZER_DIST').get_path(resolve=False)):
-        mx.log('Updating C1Visualizer')
-        shutil.rmtree(join(libpath, 'c1visualizer'))
-
-    archive = mx.library('C1VISUALIZER_DIST').get_path(resolve=True)
-
-    if not exists(executable):
-        zf = zipfile.ZipFile(archive, 'r')
-        zf.extractall(libpath)
-
-    if not exists(executable):
-        mx.abort('C1Visualizer binary does not exist: ' + executable)
-
-    if mx.get_os() != 'windows':
-        # Make sure that execution is allowed. The zip file does not always specfiy that correctly
-        os.chmod(executable, 0777)
-
-    mx.run([executable])
-
 def hsdis(args, copyToDir=None):
     """download the hsdis library
 
