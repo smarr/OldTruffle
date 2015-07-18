@@ -322,12 +322,6 @@ def _jdk(build=None, vmToCheck=None, create=False, installJars=True):
                                 fp.write(line)
                         else:
                             fp.write(line)
-
-            # Install a copy of the disassembler library
-            try:
-                hsdis([], copyToDir=_vmLibDirInJdk(jdk))
-            except SystemExit:
-                pass
     else:
         if not exists(jdk):
             _handle_missing_VM(build, vmToCheck)
@@ -845,7 +839,7 @@ def _unittest(args, annotations, prefixCp="", blacklist=None, whitelist=None, ve
         (_, testfile) = tempfile.mkstemp(".testclasses", "graal")
         os.close(_)
 
-    coreCp = mx.classpath(['com.oracle.truffle.tck', 'HCFDIS'])
+    coreCp = mx.classpath(['com.oracle.truffle.tck'])
 
     coreArgs = []
     if verbose:
@@ -1162,87 +1156,6 @@ def maven_install_truffle(args):
             mx.abort('Dot should be after / in ' + path)
         artifactId = path[slash + 1: dot]
         mx.run(['mvn', 'install:install-file', '-DgroupId=com.oracle.' + dist.suite.name, '-DartifactId=' + artifactId, '-Dversion=' + graal_version('SNAPSHOT'), '-Dpackaging=jar', '-Dfile=' + path])
-
-def hsdis(args, copyToDir=None):
-    """download the hsdis library
-
-    This is needed to support HotSpot's assembly dumping features.
-    By default it downloads the Intel syntax version, use the 'att' argument to install AT&T syntax."""
-    flavor = 'intel'
-    if 'att' in args:
-        flavor = 'att'
-    if mx.get_arch() == "sparcv9":
-        flavor = "sparcv9"
-    lib = mx.add_lib_suffix('hsdis-' + mx.get_arch())
-    path = join(_graal_home, 'lib', lib)
-
-    sha1s = {
-        'att/hsdis-amd64.dll' : 'bcbd535a9568b5075ab41e96205e26a2bac64f72',
-        'att/hsdis-amd64.so' : '58919ba085d4ef7a513f25bae75e7e54ee73c049',
-        'intel/hsdis-amd64.dll' : '6a388372cdd5fe905c1a26ced614334e405d1f30',
-        'intel/hsdis-amd64.so' : '844ed9ffed64fe9599638f29a8450c50140e3192',
-        'intel/hsdis-amd64.dylib' : 'fdb13ef0d7d23d93dacaae9c98837bea0d4fc5a2',
-        'sparcv9/hsdis-sparcv9.so': '970640a9af0bd63641f9063c11275b371a59ee60',
-    }
-
-    flavoredLib = flavor + "/" + lib
-    if flavoredLib not in sha1s:
-        mx.logv("hsdis not supported on this plattform or architecture")
-        return
-
-    if not exists(path):
-        sha1 = sha1s[flavoredLib]
-        sha1path = path + '.sha1'
-        mx.download_file_with_sha1('hsdis', path, ['http://lafo.ssw.uni-linz.ac.at/hsdis/' + flavoredLib], sha1, sha1path, True, True, sources=False)
-    if copyToDir is not None and exists(copyToDir):
-        shutil.copy(path, copyToDir)
-
-def hcfdis(args):
-    """disassemble HexCodeFiles embedded in text files
-
-    Run a tool over the input files to convert all embedded HexCodeFiles
-    to a disassembled format."""
-
-    parser = ArgumentParser(prog='mx hcfdis')
-    parser.add_argument('-m', '--map', help='address to symbol map applied to disassembler output')
-    parser.add_argument('files', nargs=REMAINDER, metavar='files...')
-
-    args = parser.parse_args(args)
-
-    path = mx.library('HCFDIS').get_path(resolve=True)
-    mx.run_java(['-cp', path, 'com.oracle.max.hcfdis.HexCodeFileDis'] + args.files)
-
-    if args.map is not None:
-        addressRE = re.compile(r'0[xX]([A-Fa-f0-9]+)')
-        with open(args.map) as fp:
-            lines = fp.read().splitlines()
-        symbols = dict()
-        for l in lines:
-            addressAndSymbol = l.split(' ', 1)
-            if len(addressAndSymbol) == 2:
-                address, symbol = addressAndSymbol
-                if address.startswith('0x'):
-                    address = long(address, 16)
-                    symbols[address] = symbol
-        for f in args.files:
-            with open(f) as fp:
-                lines = fp.read().splitlines()
-            updated = False
-            for i in range(0, len(lines)):
-                l = lines[i]
-                for m in addressRE.finditer(l):
-                    sval = m.group(0)
-                    val = long(sval, 16)
-                    sym = symbols.get(val)
-                    if sym:
-                        l = l.replace(sval, sym)
-                        updated = True
-                        lines[i] = l
-            if updated:
-                mx.log('updating ' + f)
-                with open('new_' + f, "w") as fp:
-                    for l in lines:
-                        print >> fp, l
 
 def sl(args):
     """run an SL program"""
