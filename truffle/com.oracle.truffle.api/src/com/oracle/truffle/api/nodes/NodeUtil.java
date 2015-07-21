@@ -384,7 +384,7 @@ public final class NodeUtil {
     }
 
     /** Returns all declared fields in the class hierarchy. */
-    static Field[] getAllFields(Class<? extends Object> clazz) {
+    public static Field[] getAllFields(Class<? extends Object> clazz) {
         Field[] declaredFields = clazz.getDeclaredFields();
         if (clazz.getSuperclass() != null) {
             return concat(getAllFields(clazz.getSuperclass()), declaredFields);
