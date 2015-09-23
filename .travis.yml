@@ -4,10 +4,12 @@ jdk:
 sudo: false
 env:
     - EXTRA_JAVA_HOMES=/usr/lib/jvm/java-8-oracle
+before_script:
+    - git clone --depth=1 https://github.com/smarr/mxtool.git
 script:
-    - ./mx.sh build
-    - ./mx.sh unittest
-    - ./mx.sh checkheaders
-    - ./mx.sh checkcopyright
-    - ./mx.sh checkstyle
-    - ./mx.sh findbugs
+    - mxtool/mx build
+    - mxtool/mx unittest
+    - mxtool/mx checkheaders
+    - mxtool/mx checkcopyright
+    - mxtool/mx checkstyle
+    - mxtool/mx findbugs
