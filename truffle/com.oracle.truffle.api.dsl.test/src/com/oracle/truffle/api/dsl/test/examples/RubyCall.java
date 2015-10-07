@@ -22,6 +22,15 @@
  */
 package com.oracle.truffle.api.dsl.test.examples;
 
+import static com.oracle.truffle.api.dsl.test.examples.ExampleNode.createArguments;
+import static com.oracle.truffle.api.dsl.test.examples.ExampleNode.createTarget;
+import static org.junit.Assert.assertEquals;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.junit.Test;
+
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -29,8 +38,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.internal.SpecializedNode;
-import static com.oracle.truffle.api.dsl.test.examples.ExampleNode.createArguments;
-import static com.oracle.truffle.api.dsl.test.examples.ExampleNode.createTarget;
 import com.oracle.truffle.api.dsl.test.examples.RubyCallFactory.RubyDispatchNodeGen;
 import com.oracle.truffle.api.dsl.test.examples.RubyCallFactory.RubyHeadNodeGen;
 import com.oracle.truffle.api.dsl.test.examples.RubyCallFactory.RubyLookupNodeGen;
@@ -38,12 +45,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.Node.Child;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
-import java.util.HashMap;
-import java.util.Map;
-import static org.junit.Assert.assertEquals;
-import org.junit.Test;
 
 /**
  * This example illustrates a simplified version of a Ruby function call semantics (RubyHeadNode).

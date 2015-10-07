@@ -22,6 +22,13 @@
  */
 package com.oracle.truffle.api.dsl.test;
 
+import static com.oracle.truffle.api.dsl.test.TestHelper.createCallTarget;
+import static com.oracle.truffle.api.dsl.test.TestHelper.getNode;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+import org.junit.Test;
+
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -45,12 +52,7 @@ import com.oracle.truffle.api.dsl.test.MethodGuardsTestFactory.GuardOrTestFactor
 import com.oracle.truffle.api.dsl.test.MethodGuardsTestFactory.GuardStaticFieldTestFactory;
 import com.oracle.truffle.api.dsl.test.MethodGuardsTestFactory.GuardStaticFinalFieldCompareTestFactory;
 import com.oracle.truffle.api.dsl.test.MethodGuardsTestFactory.GuardUnboundMethodTestFactory;
-import static com.oracle.truffle.api.dsl.test.TestHelper.createCallTarget;
-import static com.oracle.truffle.api.dsl.test.TestHelper.getNode;
 import com.oracle.truffle.api.dsl.test.TypeSystemTest.ValueNode;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import org.junit.Test;
 
 @SuppressWarnings("unused")
 public class MethodGuardsTest {

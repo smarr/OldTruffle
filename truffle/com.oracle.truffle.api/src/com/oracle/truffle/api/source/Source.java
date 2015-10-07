@@ -24,8 +24,6 @@
  */
 package com.oracle.truffle.api.source;
 
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.TruffleLanguage.Registration;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -53,6 +51,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.TruffleLanguage.Registration;
 
 /**
  * Representation of a guest language source code unit and its contents. Sources originate in
@@ -425,7 +426,7 @@ public abstract class Source {
 
     /**
      * The URL if the source is retrieved via URL.
-     * 
+     *
      * @return URL or <code>null</code>
      */
     public abstract URL getURL();
@@ -910,16 +911,10 @@ public abstract class Source {
 
         @Override
         String findMimeType() {
-            if (file.getName().endsWith(".c")) {
-                return "text/x-c";
-            } else if (file.getName().endsWith(".R") || file.getName().endsWith(".r")) {
-                return "application/x-r";
-            } else {
-                try {
-                    return Files.probeContentType(file.toPath());
-                } catch (IOException ex) {
-                    LOG.log(Level.SEVERE, null, ex);
-                }
+            try {
+                return Files.probeContentType(file.toPath());
+            } catch (IOException ex) {
+                LOG.log(Level.SEVERE, null, ex);
             }
             return null;
         }
@@ -998,16 +993,10 @@ public abstract class Source {
 
         @Override
         String findMimeType() {
-            if (file.getName().endsWith(".c")) {
-                return "text/x-c";
-            } else if (file.getName().endsWith(".R") || file.getName().endsWith(".r")) {
-                return "application/x-r";
-            } else {
-                try {
-                    return Files.probeContentType(file.toPath());
-                } catch (IOException ex) {
-                    LOG.log(Level.SEVERE, null, ex);
-                }
+            try {
+                return Files.probeContentType(file.toPath());
+            } catch (IOException ex) {
+                LOG.log(Level.SEVERE, null, ex);
             }
             return null;
         }

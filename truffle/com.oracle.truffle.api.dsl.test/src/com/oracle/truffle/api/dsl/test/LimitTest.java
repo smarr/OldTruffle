@@ -22,6 +22,12 @@
  */
 package com.oracle.truffle.api.dsl.test;
 
+import static com.oracle.truffle.api.dsl.test.TestHelper.createCallTarget;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+import org.junit.Test;
+
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
@@ -31,11 +37,7 @@ import com.oracle.truffle.api.dsl.test.LimitTestFactory.ConstantLimitTestFactory
 import com.oracle.truffle.api.dsl.test.LimitTestFactory.DefaultLimit3TestFactory;
 import com.oracle.truffle.api.dsl.test.LimitTestFactory.LocalLimitTestFactory;
 import com.oracle.truffle.api.dsl.test.LimitTestFactory.MethodLimitTestFactory;
-import static com.oracle.truffle.api.dsl.test.TestHelper.createCallTarget;
 import com.oracle.truffle.api.dsl.test.TypeSystemTest.ValueNode;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import org.junit.Test;
 
 @SuppressWarnings("unused")
 public class LimitTest {

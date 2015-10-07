@@ -22,15 +22,34 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+package com.oracle.truffle.api.interop.java.test;
 
-/*
- @ApiInfo(
- group="Deprecated"
- )
- */
+import static org.junit.Assert.fail;
 
-/**
- * Will change completely.
- */
-package com.oracle.truffle.api.script;
+import java.lang.reflect.Field;
 
+import com.oracle.truffle.api.instrument.Instrumenter;
+import com.oracle.truffle.api.vm.PolyglotEngine;
+
+public class InstrumentationTestMode {
+
+    public static void set(boolean enable) {
+
+        try {
+            final PolyglotEngine vm = PolyglotEngine.buildNew().build();
+            final Field instrumenterField = vm.getClass().getDeclaredField("instrumenter");
+            instrumenterField.setAccessible(true);
+            final Object instrumenter = instrumenterField.get(vm);
+            final java.lang.reflect.Field testVMField = Instrumenter.class.getDeclaredField("testVM");
+            testVMField.setAccessible(true);
+            if (enable) {
+                testVMField.set(instrumenter, vm);
+            } else {
+                testVMField.set(instrumenter, null);
+            }
+        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException ex) {
+            fail("Reflective access to Instrumenter for testing");
+        }
+
+    }
+}

@@ -35,6 +35,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.vm.PolyglotEngine;
 import com.oracle.truffle.api.vm.PolyglotEngine.Language;
 import com.oracle.truffle.tools.debug.shell.REPLMessage;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -64,6 +65,19 @@ public abstract class REPLServerContext {
     }
 
     /**
+     * Evaluates given code snippet in the context of currently suspended execution.
+     * 
+     * @param code the snippet to evaluate
+     * @param frame <code>null</code> in case the evaluation should happen in top most frame,
+     *            non-null value
+     * @return result of the evaluation
+     * @throws IOException if something goes wrong
+     */
+    public Object eval(String code, FrameInstance frame) throws IOException {
+        return event.eval(code, frame);
+    }
+
+    /**
      * The frame where execution is halted in this context.
      */
     public MaterializedFrame getFrameAtHalt() {
@@ -83,9 +97,10 @@ public abstract class REPLServerContext {
     /**
      * @deprecated use {@link #engine()}.
      */
-    @SuppressWarnings("deprecation")
     @Deprecated
-    public abstract com.oracle.truffle.api.vm.TruffleVM vm();
+    public com.oracle.truffle.api.vm.PolyglotEngine vm() {
+        return engine();
+    }
 
     protected abstract Debugger db();
 
@@ -102,7 +117,7 @@ public abstract class REPLServerContext {
 
     /**
      * Provides access to the execution stack.
-     * 
+     *
      * @return immutable list of stack elements
      */
     public List<FrameDebugDescription> getStack() {

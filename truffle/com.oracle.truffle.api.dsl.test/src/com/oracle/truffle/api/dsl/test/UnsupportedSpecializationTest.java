@@ -22,6 +22,11 @@
  */
 package com.oracle.truffle.api.dsl.test;
 
+import java.util.List;
+
+import org.junit.Assert;
+import org.junit.Test;
+
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.ShortCircuit;
@@ -33,9 +38,6 @@ import com.oracle.truffle.api.dsl.test.UnsupportedSpecializationTestFactory.Unsu
 import com.oracle.truffle.api.dsl.test.UnsupportedSpecializationTestFactory.Unsupported2Factory;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
-import java.util.List;
-import org.junit.Assert;
-import org.junit.Test;
 
 public class UnsupportedSpecializationTest {
 

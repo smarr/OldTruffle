@@ -42,8 +42,13 @@ package com.oracle.truffle.sl.test;
 
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.vm.PolyglotEngine;
+import com.oracle.truffle.sl.test.instrument.InstrumentationTestMode;
 import com.oracle.truffle.tck.TruffleTCK;
+
 import static org.junit.Assert.assertTrue;
+
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -51,6 +56,17 @@ import org.junit.Test;
  *
  */
 public class SLTckTest extends TruffleTCK {
+
+    @Before
+    public void before() {
+        InstrumentationTestMode.set(true);
+    }
+
+    @After
+    public void after() {
+        InstrumentationTestMode.set(false);
+    }
+
     @Test
     public void testVerifyPresence() {
         PolyglotEngine vm = PolyglotEngine.buildNew().build();
@@ -149,6 +165,11 @@ public class SLTckTest extends TruffleTCK {
         return "count";
     }
 
+    @Override
+    protected String globalObject() {
+        return null;
+    }
+
     //
     // Ignore tests working on floats and double
     //
@@ -176,4 +197,5 @@ public class SLTckTest extends TruffleTCK {
     @Override
     public void testPrimitiveidentityFloat() throws Exception {
     }
+
 }

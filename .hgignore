@@ -1,4 +1,5 @@
 ^mx.truffle/env
+^mx.truffle/savedDeps
 ^mx.truffle/checkstyle-timestamps
 ^mx.truffle/eclipse-config.zip
 ^mx.truffle/eclipse-config-libs.zip
@@ -9,6 +10,7 @@
 ^mx.truffle/currentAnnotationProcessors
 ^mx.truffle/ecj.jar
 ^mx.truffle/includes
+^mxbuild/
 ^build/
 ^build-nograal/
 ^build-nojvmci/
