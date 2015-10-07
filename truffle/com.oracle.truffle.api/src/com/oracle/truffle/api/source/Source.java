@@ -855,6 +855,11 @@ public abstract class Source {
         }
 
         @Override
+        public String toString() {
+            return "FileSource[" + path + "]";
+        }
+
+        @Override
         public String getCode() {
             if (fileCacheEnabled) {
                 if (code == null || timeStamp != file.lastModified()) {
