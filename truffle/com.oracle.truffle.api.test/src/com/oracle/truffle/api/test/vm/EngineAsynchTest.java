@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2015, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -20,28 +20,24 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.truffle.object.basic;
+package com.oracle.truffle.api.test.vm;
 
-import com.oracle.truffle.api.object.Layout;
-import com.oracle.truffle.api.object.LayoutFactory;
-import com.oracle.truffle.api.object.Location;
-import com.oracle.truffle.api.object.Property;
-import com.oracle.truffle.object.PropertyImpl;
+import com.oracle.truffle.api.vm.PolyglotEngine;
+import java.util.concurrent.Executors;
+import org.junit.Test;
 
-public class DefaultLayoutFactory implements LayoutFactory {
-    public Layout createLayout(Layout.Builder layoutBuilder) {
-        return BasicLayout.createLayoutImpl(layoutBuilder, new DefaultStrategy());
+public class EngineAsynchTest extends EngineTest {
+    @Test
+    public void marker() {
     }
 
-    public Property createProperty(Object id, Location location) {
-        return createProperty(id, location, 0);
+    @Override
+    protected Thread forbiddenThread() {
+        return Thread.currentThread();
     }
 
-    public Property createProperty(Object id, Location location, int flags) {
-        return new PropertyImpl(id, location, flags);
-    }
-
-    public int getPriority() {
-        return 10;
+    @Override
+    protected PolyglotEngine.Builder createBuilder() {
+        return PolyglotEngine.buildNew().executor(Executors.newSingleThreadExecutor());
     }
 }

@@ -41,42 +41,22 @@ package com.oracle.truffle.api.instrument;
  */
 public abstract class TagInstrument extends Instrument {
 
-    /**
-     * Optional documentation, mainly for debugging.
-     */
-    @SuppressWarnings("unused") private final String instrumentInfo;
-
-    protected Instrumenter instrumenter;
-
-    /**
-     * Has this instrument been disposed? stays true once set.
-     */
-    protected boolean isDisposed = false;
+    private Instrumenter instrumenter;
 
     private SyntaxTag tag = null;
 
     protected TagInstrument(Instrumenter instrumenter, SyntaxTag tag, String instrumentInfo) {
+        super(instrumentInfo);
         this.instrumenter = instrumenter;
         this.tag = tag;
-        this.instrumentInfo = instrumentInfo;
     }
 
-    @Override
-    public void dispose() throws IllegalStateException {
-        if (isDisposed) {
-            throw new IllegalStateException("Attempt to dispose an already disposed Instrumennt");
-        }
-        instrumenter.disposeAfterTagInstrument();
-        this.isDisposed = true;
-    }
-
-    @Override
-    public boolean isDisposed() {
-        return isDisposed;
-    }
-
-    public SyntaxTag getTag() {
+    public final SyntaxTag getTag() {
         return tag;
+    }
+
+    protected final Instrumenter getInstrumenter() {
+        return instrumenter;
     }
 
     static final class BeforeTagInstrument extends TagInstrument {
@@ -93,12 +73,8 @@ public abstract class TagInstrument extends Instrument {
         }
 
         @Override
-        public void dispose() throws IllegalStateException {
-            if (isDisposed) {
-                throw new IllegalStateException("Disposed Instrument can not be disposed again");
-            }
-            instrumenter.disposeBeforeTagInstrument();
-            this.isDisposed = true;
+        protected void innerDispose() {
+            getInstrumenter().disposeBeforeTagInstrument();
         }
     }
 
@@ -116,12 +92,8 @@ public abstract class TagInstrument extends Instrument {
         }
 
         @Override
-        public void dispose() throws IllegalStateException {
-            if (isDisposed) {
-                throw new IllegalStateException("Disposed Instrument can not be disposed again");
-            }
-            instrumenter.disposeAfterTagInstrument();
-            this.isDisposed = true;
+        protected void innerDispose() {
+            getInstrumenter().disposeAfterTagInstrument();
         }
     }
 }

@@ -35,9 +35,9 @@ import com.oracle.truffle.api.object.Shape.Allocator;
  * An object may change its shape but only to shapes of the same layout.
  */
 public abstract class Layout {
-    public static final EnumSet<ImplicitCast> NONE = EnumSet.noneOf(ImplicitCast.class);
-    public static final EnumSet<ImplicitCast> INT_TO_DOUBLE = EnumSet.of(ImplicitCast.IntToDouble);
-    public static final EnumSet<ImplicitCast> INT_TO_LONG = EnumSet.of(ImplicitCast.IntToLong);
+    @Deprecated public static final EnumSet<ImplicitCast> NONE = EnumSet.noneOf(ImplicitCast.class);
+    @Deprecated public static final EnumSet<ImplicitCast> INT_TO_DOUBLE = EnumSet.of(ImplicitCast.IntToDouble);
+    @Deprecated public static final EnumSet<ImplicitCast> INT_TO_LONG = EnumSet.of(ImplicitCast.IntToLong);
 
     public static final String OPTION_PREFIX = "truffle.object.";
 
@@ -62,7 +62,7 @@ public abstract class Layout {
      * Equivalent to {@code Layout.newLayout().build()}.
      */
     public static Layout createLayout() {
-        return createLayout(NONE);
+        return newLayout().build();
     }
 
     /**
@@ -139,7 +139,7 @@ public abstract class Layout {
          * Create a new layout builder.
          */
         private Builder() {
-            this.allowedImplicitCasts = Layout.NONE;
+            this.allowedImplicitCasts = EnumSet.noneOf(ImplicitCast.class);
         }
 
         /**
@@ -159,8 +159,23 @@ public abstract class Layout {
             return this;
         }
 
+        /**
+         * Add an allowed implicit cast in this layout.
+         *
+         * @see Layout.ImplicitCast
+         */
+        public Builder addAllowedImplicitCast(ImplicitCast allowedImplicitCast) {
+            this.allowedImplicitCasts.add(allowedImplicitCast);
+            return this;
+        }
+
+        @Deprecated
         public EnumSet<ImplicitCast> getAllowedImplicitCasts() {
             return allowedImplicitCasts;
         }
+    }
+
+    protected static EnumSet<ImplicitCast> getAllowedImplicitCasts(Builder builder) {
+        return builder.allowedImplicitCasts;
     }
 }
