@@ -1,5 +1,4 @@
 .idea
-build
 lib
 mx.truffle/currentAnnotationProcessors
 mx.truffle/eclipse*
@@ -23,4 +22,4 @@ truffle/**/build.xml
 truffle/**/nbproject
 truffle/*.dist
 workingsets.xml
-mx.truffle/savedDeps
+mxbuild
