@@ -40,9 +40,12 @@
  */
 package com.oracle.truffle.sl.runtime;
 
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.ExecutionContext;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Layout;
@@ -54,7 +57,9 @@ import com.oracle.truffle.sl.builtins.SLAssertFalseBuiltinFactory;
 import com.oracle.truffle.sl.builtins.SLAssertTrueBuiltinFactory;
 import com.oracle.truffle.sl.builtins.SLBuiltinNode;
 import com.oracle.truffle.sl.builtins.SLDefineFunctionBuiltinFactory;
+import com.oracle.truffle.sl.builtins.SLEvalBuiltinFactory;
 import com.oracle.truffle.sl.builtins.SLHelloEqualsWorldBuiltinFactory;
+import com.oracle.truffle.sl.builtins.SLImportBuiltinFactory;
 import com.oracle.truffle.sl.builtins.SLNanoTimeBuiltinFactory;
 import com.oracle.truffle.sl.builtins.SLNewObjectBuiltinFactory;
 import com.oracle.truffle.sl.builtins.SLPrintlnBuiltin;
@@ -69,6 +74,7 @@ import com.oracle.truffle.sl.parser.Parser;
 import com.oracle.truffle.sl.parser.SLNodeFactory;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.math.BigInteger;
 
@@ -90,19 +96,21 @@ public final class SLContext extends ExecutionContext {
     private final PrintWriter output;
     private final SLFunctionRegistry functionRegistry;
     private final Shape emptyShape;
+    private final TruffleLanguage.Env env;
 
-    public SLContext(SLLanguage language, BufferedReader input, PrintWriter output) {
-        this(language, input, output, true);
+    public SLContext(SLLanguage language, TruffleLanguage.Env env, BufferedReader input, PrintWriter output) {
+        this(language, env, input, output, true);
     }
 
     public SLContext(SLLanguage language) {
-        this(language, null, null, false);
+        this(language, null, null, null, false);
     }
 
-    private SLContext(SLLanguage language, BufferedReader input, PrintWriter output, boolean installBuiltins) {
+    private SLContext(SLLanguage language, TruffleLanguage.Env env, BufferedReader input, PrintWriter output, boolean installBuiltins) {
         this.language = language;
         this.input = input;
         this.output = output;
+        this.env = env;
         this.functionRegistry = new SLFunctionRegistry();
         installBuiltins(installBuiltins);
 
@@ -150,6 +158,8 @@ public final class SLContext extends ExecutionContext {
         installBuiltin(SLAssertTrueBuiltinFactory.getInstance(), registerRootNodes);
         installBuiltin(SLAssertFalseBuiltinFactory.getInstance(), registerRootNodes);
         installBuiltin(SLNewObjectBuiltinFactory.getInstance(), registerRootNodes);
+        installBuiltin(SLEvalBuiltinFactory.getInstance(), registerRootNodes);
+        installBuiltin(SLImportBuiltinFactory.getInstance(), registerRootNodes);
     }
 
     public void installBuiltin(NodeFactory<? extends SLBuiltinNode> factory, boolean registerRootNodes) {
@@ -211,8 +221,12 @@ public final class SLContext extends ExecutionContext {
         return LAYOUT.newInstance(emptyShape);
     }
 
-    public static boolean isSLObject(Object value) {
-        return LAYOUT.getType().isInstance(value);
+    public static boolean isSLObject(TruffleObject value) {
+        return value instanceof DynamicObject && isSLObject((DynamicObject) value);
+    }
+
+    public static boolean isSLObject(DynamicObject value) {
+        return value.getShape().getObjectType() instanceof SLObjectType;
     }
 
     public static DynamicObject castSLObject(Object value) {
@@ -220,11 +234,31 @@ public final class SLContext extends ExecutionContext {
     }
 
     public static Object fromForeignValue(Object a) {
-        if (a instanceof Long || a instanceof BigInteger) {
+        if (a instanceof Long || a instanceof BigInteger || a instanceof String) {
             return a;
         } else if (a instanceof Number) {
             return ((Number) a).longValue();
+        } else if (a instanceof TruffleObject) {
+            return a;
         }
-        return a;
+        throw new IllegalStateException(a + " is not a Truffle value");
+    }
+
+    public CallTarget parse(Source source) throws IOException {
+        return env.parse(source);
+    }
+
+    /**
+     * Goes through the other registered languages to find an exported global symbol of the
+     * specified name. The expected return type is either <code>TruffleObject</code>, or one of
+     * wrappers of Java primitive types ({@link Integer}, {@link Double}).
+     * 
+     * @param name the name of the symbol to search for
+     * @return object representing the symbol or <code>null</code>
+     */
+    public Object importSymbol(String name) {
+        Object object = env.importSymbol(name);
+        Object slValue = fromForeignValue(object);
+        return slValue;
     }
 }

@@ -31,9 +31,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.util.Collections;
 import java.util.Map;
-import java.util.WeakHashMap;
 
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.debug.SuspendedEvent;
@@ -72,8 +70,6 @@ import java.util.Objects;
  */
 @SuppressWarnings("javadoc")
 public abstract class TruffleLanguage<C> {
-    private final Map<Source, CallTarget> compiled = Collections.synchronizedMap(new WeakHashMap<Source, CallTarget>());
-
     /**
      * Constructor to be called by subclasses.
      */
@@ -200,6 +196,7 @@ public abstract class TruffleLanguage<C> {
      * asks all known languages for <code>onlyExplicit</code> symbols and only when none is found,
      * it does one more round with <code>onlyExplicit</code> set to <code>false</code>.
      *
+     * @param context context to locate the global symbol in
      * @param globalName the name of the global symbol to find
      * @param onlyExplicit should the language seek for implicitly exported object or only consider
      *            the explicitly exported ones?
@@ -215,6 +212,7 @@ public abstract class TruffleLanguage<C> {
      * language) but technically it can be one of Java primitive wrappers ({@link Integer},
      * {@link Double}, {@link Short}, etc.).
      *
+     * @param context context to find the language global in
      * @return the global object or <code>null</code> if the language does not support such concept
      */
     protected abstract Object getLanguageGlobal(C context);
@@ -387,6 +385,25 @@ public abstract class TruffleLanguage<C> {
         }
 
         /**
+         * Evaluates source of (potentially different) language. The {@link Source#getMimeType()
+         * MIME type} is used to identify the {@link TruffleLanguage} to use to perform the
+         * {@link #parse(com.oracle.truffle.api.source.Source, com.oracle.truffle.api.nodes.Node, java.lang.String...)}
+         * . The names of arguments are parameters for the resulting {#link CallTarget} that allow
+         * the <code>source</code> to reference the actual parameters passed to
+         * {@link CallTarget#call(java.lang.Object...)}.
+         * 
+         * @param source the source to evaluate
+         * @param argumentNames the names of {@link CallTarget#call(java.lang.Object...)} arguments
+         *            that can be referenced from the source
+         * @return the call target representing the parsed result
+         * @throws IOException if the parsing or evaluation fails for some reason
+         */
+        public CallTarget parse(Source source, String... argumentNames) throws IOException {
+            TruffleLanguage<?> language = API.findLanguageImpl(vm, null, source.getMimeType());
+            return language.parse(source, null, argumentNames);
+        }
+
+        /**
          * Input associated with {@link com.oracle.truffle.api.vm.PolyglotEngine} this language is
          * being executed in.
          *
@@ -442,14 +459,14 @@ public abstract class TruffleLanguage<C> {
         }
 
         @Override
-        protected Object eval(TruffleLanguage<?> language, Source source) throws IOException {
-            CallTarget target = language.compiled.get(source);
+        protected Object eval(TruffleLanguage<?> language, Source source, Map<Source, CallTarget> cache) throws IOException {
+            CallTarget target = cache.get(source);
             if (target == null) {
                 target = language.parse(source, null);
                 if (target == null) {
                     throw new IOException("Parsing has not produced a CallTarget for " + source);
                 }
-                language.compiled.put(source, target);
+                cache.put(source, target);
             }
             try {
                 return target.call();
@@ -483,6 +500,11 @@ public abstract class TruffleLanguage<C> {
         @Override
         protected TruffleLanguage<?> findLanguage(Env env) {
             return env.lang;
+        }
+
+        @Override
+        protected TruffleLanguage<?> findLanguageImpl(Object known, Class<? extends TruffleLanguage> languageClass, String mimeType) {
+            return super.findLanguageImpl(known, languageClass, mimeType);
         }
 
         @Override

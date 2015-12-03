@@ -154,7 +154,9 @@ public abstract class ShapeImpl extends Shape {
         this.extraData = objectType.createShapeData(this);
 
         shapeCount.inc();
-        debugRegisterShape(this);
+        if (ObjectStorageOptions.DumpShapes) {
+            Debug.trackShape(this);
+        }
     }
 
     protected ShapeImpl(Layout layout, ShapeImpl parent, ObjectType operations, Object sharedData, PropertyMap propertyMap, Transition transition, Allocator allocator, int id) {
@@ -311,10 +313,14 @@ public abstract class ShapeImpl extends Shape {
     }
 
     protected final ShapeImpl queryTransition(Transition transition) {
+        return queryTransition(transition, true);
+    }
+
+    protected final ShapeImpl queryTransition(Transition transition, boolean ensureValid) {
         ShapeImpl cachedShape = this.getTransitionMapForRead().get(transition);
         if (cachedShape != null) { // Shape already exists?
             shapeCacheHitCount.inc();
-            return layout.getStrategy().ensureValid(cachedShape);
+            return ensureValid ? layout.getStrategy().ensureValid(cachedShape) : cachedShape;
         }
         shapeCacheMissCount.inc();
 
@@ -332,7 +338,7 @@ public abstract class ShapeImpl extends Shape {
     public ShapeImpl addProperty(Property property) {
         assert isValid();
         onPropertyTransition(property);
-        return addPropertyInternal(property);
+        return addPropertyInternal(property, true);
     }
 
     private void onPropertyTransition(Property property) {
@@ -383,12 +389,12 @@ public abstract class ShapeImpl extends Shape {
      *
      * @see #addProperty(Property)
      */
-    private ShapeImpl addPropertyInternal(Property prop) {
+    private ShapeImpl addPropertyInternal(Property prop, boolean ensureValid) {
         CompilerAsserts.neverPartOfCompilation();
         assert prop.isShadow() || !(this.hasProperty(prop.getKey())) : "duplicate property " + prop.getKey();
 
         AddPropertyTransition addTransition = new AddPropertyTransition(prop);
-        ShapeImpl cachedShape = queryTransition(addTransition);
+        ShapeImpl cachedShape = queryTransition(addTransition, ensureValid);
         if (cachedShape != null) {
             return cachedShape;
         }
@@ -707,7 +713,7 @@ public abstract class ShapeImpl extends Shape {
 
     public final ShapeImpl applyTransition(Transition transition, boolean append) {
         if (transition instanceof AddPropertyTransition) {
-            return append ? append(((AddPropertyTransition) transition).getProperty()) : addProperty(((AddPropertyTransition) transition).getProperty());
+            return append ? append(((AddPropertyTransition) transition).getProperty()) : addPropertyInternal(((AddPropertyTransition) transition).getProperty(), false);
         } else if (transition instanceof ObjectTypeTransition) {
             return changeType(((ObjectTypeTransition) transition).getObjectType());
         } else if (transition instanceof ReservePrimitiveArrayTransition) {
@@ -736,41 +742,7 @@ public abstract class ShapeImpl extends Shape {
      */
     @Override
     public ShapeImpl replaceProperty(Property oldProperty, Property newProperty) {
-        return indirectReplaceProperty(oldProperty, newProperty);
-    }
-
-    protected final ShapeImpl indirectReplaceProperty(Property oldProperty, Property newProperty) {
-        assert oldProperty.getKey().equals(newProperty.getKey());
-
-        Transition replacePropertyTransition = new Transition.IndirectReplacePropertyTransition(oldProperty, newProperty);
-        ShapeImpl cachedShape = queryTransition(replacePropertyTransition);
-        if (cachedShape != null) {
-            return cachedShape;
-        }
-
-        ShapeImpl top = this;
-        List<Transition> transitionList = new ArrayList<>();
-        boolean found = false;
-        while (top != getRoot() && !found) {
-            Transition transition = top.getTransitionFromParent();
-            transitionList.add(transition);
-            if (transition instanceof AddPropertyTransition && ((AddPropertyTransition) transition).getProperty().getKey().equals(newProperty.getKey())) {
-                found = true;
-            }
-            top = top.parent;
-        }
-        ShapeImpl newShape = top;
-        for (ListIterator<Transition> iterator = transitionList.listIterator(transitionList.size()); iterator.hasPrevious();) {
-            Transition transition = iterator.previous();
-            if (transition instanceof AddPropertyTransition && ((AddPropertyTransition) transition).getProperty().getKey().equals(newProperty.getKey())) {
-                newShape = newShape.addProperty(newProperty);
-            } else {
-                newShape = newShape.applyTransition(transition, false);
-            }
-        }
-
-        addIndirectTransition(replacePropertyTransition, newShape);
-        return newShape;
+        return directReplaceProperty(oldProperty, newProperty);
     }
 
     protected final ShapeImpl directReplaceProperty(Property oldProperty, Property newProperty) {
@@ -1126,12 +1098,6 @@ public abstract class ShapeImpl extends Shape {
         }
     }
 
-    private static void debugRegisterShape(ShapeImpl newShape) {
-        if (ObjectStorageOptions.DumpShapes) {
-            Debug.registerShape(newShape);
-        }
-    }
-
     /**
      * Match all filter.
      */
@@ -1152,7 +1118,7 @@ public abstract class ShapeImpl extends Shape {
     private static final DebugCounter shapeCacheHitCount = DebugCounter.create("Shape cache hits");
     private static final DebugCounter shapeCacheMissCount = DebugCounter.create("Shape cache misses");
 
-    public ForeignAccess getForeignAccessFactory() {
-        return getObjectType().getForeignAccessFactory();
+    public ForeignAccess getForeignAccessFactory(DynamicObject object) {
+        return getObjectType().getForeignAccessFactory(object);
     }
 }

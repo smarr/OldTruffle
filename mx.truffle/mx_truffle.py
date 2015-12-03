@@ -29,6 +29,7 @@
 import mx
 
 from mx_unittest import unittest
+from mx_sigtest import sigtest
 from mx_gate import Task
 import mx_gate
 
@@ -44,6 +45,11 @@ def sl(args):
     vmArgs, slArgs = mx.extract_VM_args(args)
     mx.run_java(vmArgs + ['-cp', mx.classpath(["TRUFFLE_API", "com.oracle.truffle.sl"]), "com.oracle.truffle.sl.SLLanguage"] + slArgs)
 
+def slcoverage(args):
+    """Demo: run an SL program with coverage counts printed when done"""
+    vmArgs, slArgs = mx.extract_VM_args(args)
+    mx.run_java(vmArgs + ['-cp', mx.classpath("com.oracle.truffle.sl.tools"), "com.oracle.truffle.sl.tools.SLCoverage"] + slArgs)
+
 def sldebug(args):
     """run a simple command line debugger for the Simple Language"""
     vmArgs, slArgs = mx.extract_VM_args(args, useDoubleDash=True)
@@ -52,10 +58,13 @@ def sldebug(args):
 def _truffle_gate_runner(args, tasks):
     with Task('Truffle UnitTests', tasks) as t:
         if t: unittest(['--suite', 'truffle', '--enable-timing', '--verbose', '--fail-fast'])
+    with Task('Truffle Signature Tests', tasks) as t:
+        if t: sigtest(['--check', 'binary'])
 
 mx_gate.add_gate_runner(_suite, _truffle_gate_runner)
 
 mx.update_commands(_suite, {
     'sl' : [sl, '[SL args|@VM options]'],
     'sldebug' : [sldebug, '[SL args|@VM options]'],
+    'slcoverage' : [slcoverage, '[SL args|@VM options]'],
 })

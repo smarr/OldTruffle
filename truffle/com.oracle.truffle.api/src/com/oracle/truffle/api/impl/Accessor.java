@@ -49,6 +49,7 @@ import com.oracle.truffle.api.instrument.WrapperNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
+import java.util.Map;
 
 /**
  * Communication between PolyglotEngine, TruffleLanguage API/SPI, and other services.
@@ -153,8 +154,8 @@ public abstract class Accessor {
         return API.attachEnv(vm, language, stdOut, stdErr, stdIn, instrumenter);
     }
 
-    protected Object eval(TruffleLanguage<?> l, Source s) throws IOException {
-        return API.eval(l, s);
+    protected Object eval(TruffleLanguage<?> l, Source s, Map<Source, CallTarget> cache) throws IOException {
+        return API.eval(l, s, cache);
     }
 
     protected Object evalInContext(Object vm, SuspendedEvent ev, String code, FrameInstance frame) throws IOException {
@@ -180,7 +181,7 @@ public abstract class Accessor {
     protected boolean isInstrumentable(Object vm, Node node) {
         final RootNode rootNode = node.getRootNode();
         Class<? extends TruffleLanguage> languageClazz = findLanguage(rootNode);
-        TruffleLanguage language = findLanguageImpl(vm, languageClazz);
+        TruffleLanguage language = findLanguageImpl(vm, languageClazz, null);
         return isInstrumentable(node, language);
     }
 
@@ -195,7 +196,7 @@ public abstract class Accessor {
     protected WrapperNode createWrapperNode(Object vm, Node node) {
         final RootNode rootNode = node.getRootNode();
         Class<? extends TruffleLanguage> languageClazz = findLanguage(rootNode);
-        TruffleLanguage language = findLanguageImpl(vm, languageClazz);
+        TruffleLanguage language = findLanguageImpl(vm, languageClazz, null);
         return createWrapperNode(node, language);
     }
 
@@ -231,7 +232,7 @@ public abstract class Accessor {
     }
 
     @SuppressWarnings("rawtypes")
-    protected TruffleLanguage<?> findLanguageImpl(Object known, Class<? extends TruffleLanguage> languageClass) {
+    protected TruffleLanguage<?> findLanguageImpl(Object known, Class<? extends TruffleLanguage> languageClass, String mimeType) {
         Object vm;
         if (known == null) {
             vm = CURRENT_VM.get();
@@ -241,7 +242,7 @@ public abstract class Accessor {
         } else {
             vm = known;
         }
-        return SPI.findLanguageImpl(vm, languageClass);
+        return SPI.findLanguageImpl(vm, languageClass, mimeType);
     }
 
     protected Instrumenter getInstrumenter(Object known) {
@@ -334,7 +335,7 @@ public abstract class Accessor {
 
     @SuppressWarnings("rawtypes")
     protected CallTarget parse(Class<? extends TruffleLanguage> languageClass, Source code, Node context, String... argumentNames) throws IOException {
-        final TruffleLanguage<?> truffleLanguage = findLanguageImpl(null, languageClass);
+        final TruffleLanguage<?> truffleLanguage = findLanguageImpl(null, languageClass, code.getMimeType());
         return parse(truffleLanguage, code, context, argumentNames);
     }
 
@@ -344,5 +345,11 @@ public abstract class Accessor {
 
     protected String toString(TruffleLanguage<?> language, Env env, Object obj) {
         return API.toString(language, env, obj);
+    }
+
+    static <T extends TruffleLanguage<?>> T findLanguageByClass(Object vm, Class<T> languageClass) {
+        Env env = API.findLanguage(vm, languageClass);
+        TruffleLanguage<?> language = API.findLanguage(env);
+        return languageClass.cast(language);
     }
 }
