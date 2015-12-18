@@ -20,14 +20,13 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.truffle.api.utilities;
+package com.oracle.truffle.api.profiles;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
-
-import java.lang.reflect.Method;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -44,12 +43,20 @@ public class ExactClassValueProfileTest {
     @DataPoint public static final Object O3 = new Object();
     @DataPoint public static final Integer O4 = new Integer(1);
     @DataPoint public static final Integer O5 = null;
+    @DataPoint public static final TestBaseClass O6 = new TestBaseClass();
+    @DataPoint public static final TestSubClass O7 = new TestSubClass();
 
-    private ValueProfile profile;
+    private ValueProfile.ExactClass profile;
+
+    private static class TestBaseClass {
+    }
+
+    private static class TestSubClass extends TestBaseClass {
+    }
 
     @Before
     public void create() {
-        profile = ValueProfile.createClassProfile();
+        profile = (ValueProfile.ExactClass) ValueProfile.ExactClass.create();
     }
 
     @Test
@@ -57,7 +64,7 @@ public class ExactClassValueProfileTest {
         assertThat(isGeneric(profile), is(false));
         assertThat(isUninitialized(profile), is(true));
         assertNull(getCachedClass(profile));
-        profile.toString(); // test that it is not crashing
+        assertNotNull(profile.toString());
     }
 
     @Theory
@@ -65,9 +72,9 @@ public class ExactClassValueProfileTest {
         Object result = profile.profile(value);
 
         assertThat(result, is(value));
-        assertEquals(getCachedClass(profile), expectedClass(value));
+        assertEquals(expectedClass(value), getCachedClass(profile));
         assertThat(isUninitialized(profile), is(false));
-        profile.toString(); // test that it is not crashing
+        assertNotNull(profile.toString());
     }
 
     @Theory
@@ -80,10 +87,10 @@ public class ExactClassValueProfileTest {
 
         Object expectedClass = expectedClass(value0) == expectedClass(value1) ? expectedClass(value0) : Object.class;
 
-        assertEquals(getCachedClass(profile), expectedClass);
+        assertEquals(expectedClass, getCachedClass(profile));
         assertThat(isUninitialized(profile), is(false));
         assertThat(isGeneric(profile), is(expectedClass == Object.class));
-        profile.toString(); // test that it is not crashing
+        assertNotNull(profile.toString());
     }
 
     @Theory
@@ -98,31 +105,25 @@ public class ExactClassValueProfileTest {
 
         Object expectedClass = expectedClass(value0) == expectedClass(value1) && expectedClass(value1) == expectedClass(value2) ? expectedClass(value0) : Object.class;
 
-        assertEquals(getCachedClass(profile), expectedClass);
+        assertEquals(expectedClass, getCachedClass(profile));
         assertThat(isUninitialized(profile), is(false));
         assertThat(isGeneric(profile), is(expectedClass == Object.class));
-        profile.toString(); // test that it is not crashing
+        assertNotNull(profile.toString());
     }
 
     private static Class<?> expectedClass(Object value) {
         return value == null ? Object.class : value.getClass();
     }
 
-    private static Object get(String name, ValueProfile profile) throws Exception {
-        final Method m = profile.getClass().getDeclaredMethod(name);
-        m.setAccessible(true);
-        return m.invoke(profile);
+    private static Object getCachedClass(ValueProfile.ExactClass profile) throws Exception {
+        return profile.getCachedClass();
     }
 
-    private static Object getCachedClass(ValueProfile profile) throws Exception {
-        return get("getCachedClass", profile);
+    private static boolean isUninitialized(ValueProfile.ExactClass profile) throws Exception {
+        return profile.isUninitialized();
     }
 
-    private static boolean isUninitialized(ValueProfile profile) throws Exception {
-        return (Boolean) get("isUninitialized", profile);
-    }
-
-    private static boolean isGeneric(ValueProfile profile) throws Exception {
-        return (Boolean) get("isGeneric", profile);
+    private static boolean isGeneric(ValueProfile.ExactClass profile) throws Exception {
+        return profile.isGeneric();
     }
 }

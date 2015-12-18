@@ -22,41 +22,18 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.truffle.tools.debug.shell.server;
 
-import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameInstance;
-import com.oracle.truffle.api.nodes.Node;
+/*
+ @ApiInfo(
+ group="Stable"
+ )
+ */
+/**
+ * A profile is a Truffle utility class that uses the
+ * {@link com.oracle.truffle.api.CompilerDirectives Truffle compiler directives} to guard for and/or
+ * forward runtime information to the compiler.
+ *
+ * @see com.oracle.truffle.api.profiles.Profile
+ */
+package com.oracle.truffle.api.profiles;
 
-public final class FrameDebugDescription {
-    private final int index;
-    private final Node node;
-    private final FrameInstance frameInstance;
-
-    FrameDebugDescription(int index, Node node, FrameInstance frameInstance) {
-        this.index = index;
-        this.node = node;
-        this.frameInstance = frameInstance;
-    }
-
-    /**
-     * Position in the current stack: {@code 0} at the top.
-     */
-    public int index() {
-        return index;
-    }
-
-    /**
-     * AST location.
-     */
-    public Node node() {
-        return node;
-    }
-
-    /**
-     * Access to the Truffle {@link Frame}.
-     */
-    public FrameInstance frameInstance() {
-        return frameInstance;
-    }
-}

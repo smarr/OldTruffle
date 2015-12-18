@@ -29,14 +29,9 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.nodes.NodeCloneable;
 
 /**
- * Utility class to speculate on branches to be never visited. If the {@link #enter()} method is
- * invoked first the optimized code is invalidated and the branch where {@link #enter()} is invoked
- * is enabled for compilation. Otherwise if the {@link #enter()} method was never invoked the branch
- * will not get compiled.
- *
- * All {@code BranchProfile} instances must be held in {@code final} fields for compiler
- * optimizations to take effect.
+ * @deprecated use {@link com.oracle.truffle.api.profiles.BranchProfile} instead
  */
+@Deprecated
 public final class BranchProfile extends NodeCloneable {
 
     @CompilationFinal private boolean visited;
@@ -55,6 +50,10 @@ public final class BranchProfile extends NodeCloneable {
         return visited;
     }
 
+    /**
+     * @deprecated use {@link com.oracle.truffle.api.profiles.BranchProfile#create()} instead
+     */
+    @Deprecated
     public static BranchProfile create() {
         return new BranchProfile();
     }

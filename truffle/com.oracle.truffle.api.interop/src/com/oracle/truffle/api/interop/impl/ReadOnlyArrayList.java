@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+
 public final class ReadOnlyArrayList<T> implements List<T> {
     private final T[] arr;
     private final int first;
@@ -209,6 +211,26 @@ public final class ReadOnlyArrayList<T> implements List<T> {
     @Override
     public List<T> subList(int fromIndex, int toIndex) {
         return new ReadOnlyArrayList<>(arr, first + fromIndex, first + toIndex);
+    }
+
+    @TruffleBoundary
+    @Override
+    public String toString() {
+        Iterator<T> it = iterator();
+        if (!it.hasNext()) {
+            return "[]";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append('[');
+        for (;;) {
+            T e = it.next();
+            sb.append(e == this ? "(this Collection)" : e);
+            if (!it.hasNext()) {
+                return sb.append(']').toString();
+            }
+            sb.append(',').append(' ');
+        }
     }
 
     private final class LI implements ListIterator<T>, Iterator<T> {

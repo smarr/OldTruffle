@@ -45,10 +45,18 @@ public final class FrameDescriptor implements Cloneable {
     private Assumption version;
     private HashMap<Object, Assumption> identifierToNotInFrameAssumptionMap;
 
+    /**
+     * Constructs empty descriptor. The {@link #getDefaultValue()} is <code>null</code>.
+     */
     public FrameDescriptor() {
         this(null);
     }
 
+    /**
+     * Constructs new descriptor with specified {@link #getDefaultValue()}.
+     *
+     * @param defaultValue to be returned from {@link #getDefaultValue()}
+     */
     public FrameDescriptor(Object defaultValue) {
         CompilerAsserts.neverPartOfCompilation();
         this.defaultValue = defaultValue;
@@ -57,22 +65,65 @@ public final class FrameDescriptor implements Cloneable {
         version = createVersion();
     }
 
+    /**
+     * Use {@link #FrameDescriptor()}.
+     *
+     * @return new instance of the descriptor
+     * @deprecated
+     */
+    @Deprecated
     public static FrameDescriptor create() {
         return new FrameDescriptor();
     }
 
+    /**
+     * Use {@link #FrameDescriptor(java.lang.Object) }.
+     *
+     * @return new instance of the descriptor
+     * @deprecated
+     */
+    @Deprecated
     public static FrameDescriptor create(Object defaultValue) {
         return new FrameDescriptor(defaultValue);
     }
 
+    /**
+     * Adds frame slot. Delegates to
+     * {@link #addFrameSlot(java.lang.Object, java.lang.Object, com.oracle.truffle.api.frame.FrameSlotKind)
+     * addFrameSlot}(identifier, <code>null</code>, {@link FrameSlotKind#Illegal}). This is a slow
+     * operation that switches to interpreter mode.
+     *
+     * @param identifier key for the slot
+     * @return the newly created slot
+     */
     public FrameSlot addFrameSlot(Object identifier) {
         return addFrameSlot(identifier, null, FrameSlotKind.Illegal);
     }
 
+    /**
+     * Adds frame slot. Delegates to
+     * {@link #addFrameSlot(java.lang.Object, java.lang.Object, com.oracle.truffle.api.frame.FrameSlotKind)
+     * addFrameSlot}(identifier, <code>null</code>, <code>kind</code>). This is a slow operation
+     * that switches to interpreter mode.
+     *
+     * @param identifier key for the slot
+     * @param kind the kind of the new slot
+     * @return the newly created slot
+     */
     public FrameSlot addFrameSlot(Object identifier, FrameSlotKind kind) {
         return addFrameSlot(identifier, null, kind);
     }
 
+    /**
+     * Adds new frame slot to {@link #getSlots()} list. This is a slow operation that switches to
+     * interpreter mode.
+     *
+     * @param identifier key for the slot - it needs proper {@link #equals(java.lang.Object)} and
+     *            {@link Object#hashCode()} implementations
+     * @param info additional {@link FrameSlot#getInfo() information for the slot}
+     * @param kind the kind of the new slot
+     * @return the newly created slot
+     */
     public FrameSlot addFrameSlot(Object identifier, Object info, FrameSlotKind kind) {
         CompilerAsserts.neverPartOfCompilation("interpreter-only.  includes hashmap operations.");
         assert !identifierToSlotMap.containsKey(identifier);
@@ -84,11 +135,23 @@ public final class FrameDescriptor implements Cloneable {
         return slot;
     }
 
+    /**
+     * Finds an existing slot. This is a slow operation.
+     *
+     * @param identifier the key of the slot to search for
+     * @return the slot or <code>null</code>
+     */
     public FrameSlot findFrameSlot(Object identifier) {
         CompilerAsserts.neverPartOfCompilation("interpreter-only.  includes hashmap operations.");
         return identifierToSlotMap.get(identifier);
     }
 
+    /**
+     * Finds an existing slot or creates new one. This is a slow operation.
+     *
+     * @param identifier the key of the slot to search for
+     * @return the slot
+     */
     public FrameSlot findOrAddFrameSlot(Object identifier) {
         FrameSlot result = findFrameSlot(identifier);
         if (result != null) {
@@ -97,6 +160,13 @@ public final class FrameDescriptor implements Cloneable {
         return addFrameSlot(identifier);
     }
 
+    /**
+     * Finds an existing slot or creates new one. This is a slow operation.
+     *
+     * @param identifier the key of the slot to search for
+     * @param kind the kind for the newly created slot
+     * @return the found or newly created slot
+     */
     public FrameSlot findOrAddFrameSlot(Object identifier, FrameSlotKind kind) {
         FrameSlot result = findFrameSlot(identifier);
         if (result != null) {
@@ -105,6 +175,14 @@ public final class FrameDescriptor implements Cloneable {
         return addFrameSlot(identifier, kind);
     }
 
+    /**
+     * Finds an existing slot or creates new one. This is a slow operation.
+     *
+     * @param identifier the key of the slot to search for
+     * @param info info for the newly created slot
+     * @param kind the kind for the newly created slot
+     * @return the found or newly created slot
+     */
     public FrameSlot findOrAddFrameSlot(Object identifier, Object info, FrameSlotKind kind) {
         FrameSlot result = findFrameSlot(identifier);
         if (result != null) {
@@ -113,6 +191,12 @@ public final class FrameDescriptor implements Cloneable {
         return addFrameSlot(identifier, info, kind);
     }
 
+    /**
+     * Removes a slot. If the identifier is found, its slot is removed from this descriptor. This is
+     * a slow operation.
+     *
+     * @param identifier identifies the slot to remove
+     */
     public void removeFrameSlot(Object identifier) {
         CompilerAsserts.neverPartOfCompilation("interpreter-only.  includes hashmap operations.");
         assert identifierToSlotMap.containsKey(identifier);
@@ -122,10 +206,20 @@ public final class FrameDescriptor implements Cloneable {
         getNotInFrameAssumption(identifier);
     }
 
+    /**
+     * Returns number of slots in the descriptor.
+     *
+     * @return the same value as {@link #getSlots()}.{@link List#size()} would return
+     */
     public int getSize() {
         return slots.size();
     }
 
+    /**
+     * Current set of slots in the descriptor.
+     *
+     * @return unmodifiable list of {@link FrameSlot}
+     */
     public List<? extends FrameSlot> getSlots() {
         return Collections.unmodifiableList(slots);
     }
@@ -139,15 +233,29 @@ public final class FrameDescriptor implements Cloneable {
         return Collections.unmodifiableSet(identifierToSlotMap.keySet());
     }
 
+    /**
+     * Deeper copy of the descriptor. Copies all slots in the descriptor, but only their
+     * {@linkplain FrameSlot#getIdentifier() identifier} and {@linkplain FrameSlot#getInfo() info}
+     * but not their {@linkplain FrameSlot#getKind() kind}!
+     *
+     * @return new instance of a descriptor with copies of values from this one
+     */
     public FrameDescriptor copy() {
         FrameDescriptor clonedFrameDescriptor = new FrameDescriptor(this.defaultValue);
-        for (int i = 0; i < this.getSlots().size(); i++) {
-            Object identifier = this.getSlots().get(i).getIdentifier();
-            clonedFrameDescriptor.addFrameSlot(identifier);
+        for (int i = 0; i < slots.size(); i++) {
+            FrameSlot slot = slots.get(i);
+            clonedFrameDescriptor.addFrameSlot(slot.getIdentifier(), slot.getInfo(), FrameSlotKind.Illegal);
         }
         return clonedFrameDescriptor;
     }
 
+    /**
+     * Shallow copy of the descriptor. Re-uses the existing slots in new descriptor. As a result, if
+     * you {@link FrameSlot#setKind(com.oracle.truffle.api.frame.FrameSlotKind) change kind} of one
+     * of the slots it is changed in the original as well as in the shallow copy.
+     *
+     * @return new instance of a descriptor with copies of values from this one
+     */
     public FrameDescriptor shallowCopy() {
         FrameDescriptor clonedFrameDescriptor = new FrameDescriptor(this.defaultValue);
         clonedFrameDescriptor.slots.addAll(slots);
@@ -155,11 +263,21 @@ public final class FrameDescriptor implements Cloneable {
         return clonedFrameDescriptor;
     }
 
+    /**
+     * Invalidates the current, and create a new version assumption.
+     */
     void updateVersion() {
         version.invalidate();
         version = createVersion();
     }
 
+    /**
+     * Returns an assumption reflecting the frame's current version, which is updated every time a
+     * slot is added or removed, or an existing slot's kind is changed. This assumption is
+     * associated with compiled code that depends on the internal frame layout.
+     *
+     * @return an assumption invalidated when a slot is added or removed, or a slot kind changed.
+     */
     public Assumption getVersion() {
         return version;
     }
@@ -168,10 +286,23 @@ public final class FrameDescriptor implements Cloneable {
         return Truffle.getRuntime().createAssumption("frame version");
     }
 
+    /**
+     * Default value for the created slots.
+     *
+     * @return value provided to {@link #FrameDescriptor(java.lang.Object)}
+     */
     public Object getDefaultValue() {
         return defaultValue;
     }
 
+    /**
+     * Make an assumption that no slot with the specified identifier is present in this frame
+     * descriptor. Invalidated when a frame slot with the identifier is added.
+     *
+     * @param identifier frame slot identifier
+     * @return an assumption that this frame descriptor does not contain a slot with the identifier
+     * @throws IllegalArgumentException if the frame descriptor contains a slot with the identifier
+     */
     public Assumption getNotInFrameAssumption(Object identifier) {
         if (identifierToSlotMap.containsKey(identifier)) {
             throw new IllegalArgumentException("Cannot get not-in-frame assumption for existing frame slot!");
@@ -185,7 +316,7 @@ public final class FrameDescriptor implements Cloneable {
                 return assumption;
             }
         }
-        Assumption assumption = Truffle.getRuntime().createAssumption("not in frame: " + identifier);
+        Assumption assumption = Truffle.getRuntime().createAssumption("identifier not in frame");
         identifierToNotInFrameAssumptionMap.put(identifier, assumption);
         return assumption;
     }
