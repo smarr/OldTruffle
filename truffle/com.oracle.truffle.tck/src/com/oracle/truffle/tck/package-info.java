@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,12 +22,16 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.truffle.tck;
+
+/*
+ @ApiInfo(
+ group="Test Compatibility Kit"
+ )
+ */
 
 /**
- * Binary operation on any objects. Mimics "functional interface" - e.g. has just a single method,
- * so it should be easily usable with lamdas.
+ * Include implementation of {@link com.oracle.truffle.tck.TruffleTCK} in your test suite to verify
+ * your {@link com.oracle.truffle.api.TruffleLanguage language} implementation is compliant.
  */
-public interface ObjectBinaryOperation {
-    Object compute(Object a, Object b);
-}
+package com.oracle.truffle.tck;
+

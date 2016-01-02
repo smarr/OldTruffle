@@ -22,19 +22,12 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.truffle.tck;
+package com.oracle.truffle.tck.impl;
 
-import com.oracle.truffle.tck.impl.LongBinaryOperation;
-
-final class MaxMinObject implements LongBinaryOperation {
-    private final boolean max;
-
-    public MaxMinObject(boolean max) {
-        this.max = max;
-    }
-
-    @Override
-    public long compute(long a, long b) {
-        return max ? Math.max(a, b) : Math.min(a, b);
-    }
+/**
+ * Binary operation on any objects. Mimics "functional interface" - e.g. has just a single method,
+ * so it should be easily usable with lamdas.
+ */
+public interface ObjectBinaryOperation {
+    Object compute(Object a, Object b);
 }
