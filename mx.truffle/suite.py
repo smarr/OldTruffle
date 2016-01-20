@@ -1,5 +1,5 @@
 suite = {
-  "mxversion" : "5.5.7",
+  "mxversion" : "5.6.6",
   "name" : "truffle",
   "url" : "http://openjdk.java.net/projects/graal",
   "developer" : {
@@ -25,6 +25,8 @@ suite = {
         "https://search.maven.org/remotecontent?filepath=jline/jline/2.11/jline-2.11.jar",
       ],
       "sha1" : "9504d5e2da5d78237239c5226e8200ec21182040",
+      "sourcePath" : "https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/jline-2.11-sources.jar",
+      "sourceSha1" : "ef2539b992e5605be966b6db7cfc83930f0da39b",
       "maven" : {
       	"groupId" : "jline",
     	"artifactId" : "jline",
@@ -280,6 +282,7 @@ suite = {
       ],
       "description" : """Truffle is a multi-language framework for executing dynamic languages
         that achieves high performance when combined with Graal.""",
+      "javadocType": "api",
     },
 
     "TRUFFLE_TCK" : {
@@ -330,6 +333,7 @@ suite = {
           "TRUFFLE_API",
       ],
       "description" : "Experimental REPL server to build your debugger console for your language.",
+      "allowsJavadocWarnings": True,
      }
   },
 }
